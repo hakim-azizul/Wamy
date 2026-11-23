@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+:root {
+  /* 60% Primary (#EBE2CA - Warm Sand Cream) */
+  --bg-primary: #EBE2CA;
+  --bg-primary-tint: #F4EFE2;    /* হালকা ক্রিমি টিন্ট (অল্টারনেট সেকশন/হোভার) */
+  --bg-primary-shade: #DDD1B2;   /* একটু গাঢ় স্যান্ড টোন (ডিভাইডার/প্রেসড স্টেট) */
+  --bg-surface: #F9F5EC;         /* কার্ড ও প্যানেল সারফেস */
+  --bg-elevated: #FFFFFF;        /* উঁচু কার্ড, মডাল ও ইনপুট বক্স */
+
+  /* 30% Secondary (#1E4831 - Deep Forest Green) */
+  --text-primary: #1E4831;       /* মূল ফরেস্ট গ্রিন (হেডিং, প্রাইমারি টেক্সট ও আইকন) */
+  --text-primary-dark: #132F20;  /* আরও গাঢ় ফরেস্ট গ্রিন (ডার্ক সারফেস/বোল্ড ফোকাস) */
+  --bg-forest-tint: #DCE6E0;     /* ফরেস্ট গ্রিনের হালকা টিন্ট (ব্যাজ/হাইলাইট পিল) */
+  --text-secondary: #3E5E4D;     /* মিউটেড ফরেস্ট টেক্সট (প্যারাগ্রাফ/বর্ণনা) */
+  --text-muted: #657F71;         /* হালকা টেক্সট (ক্যাপশন/প্লেসহোল্ডার) */
+  --border-subtle: #D5C9AE;      /* স্বাভাবিক বর্ডার */
+  --border-strong: #B9A988;      /* একটু গাঢ় বর্ডার/ফোকাস রিং */
+
+  /* 10% Accent (#DE2F2C - Vibrant Crimson Red) */
+  --accent-primary: #DE2F2C;     /* মূল অ্যাকসেন্ট রেড (মেইন CTA / Sign In বাটন) */
+  --accent-hover: #BD221F;       /* হোভার ডার্ক রেড */
+  --accent-dark: #931815;        /* খুব গাঢ় রেড (অ্যাক্টিভ/ক্লিক স্টেট) */
+  --accent-tint: #FDE8E7;        /* হালকা রেড টিন্ট (এরর/অ্যালার্ট ব্যাকগ্রাউন্ড) */
+}
+
+@layer base {
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: var(--font-tajawal), sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-cairo), sans-serif;
+  }
+}
+
+/* Nav link left-to-right underline animation */
+.nav-link-underline {
+  position: relative;
+  display: inline-block;
+  padding-bottom: 4px;
+}
+
+.nav-link-underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2.5px;
+  background-color: var(--accent-primary);
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.3s ease-in-out;
+}
+
+.nav-link-underline:hover::after,
+.nav-link-underline.active::after {
+  transform: scaleX(1);
+}
