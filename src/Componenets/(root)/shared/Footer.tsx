@@ -117,7 +117,7 @@ export default function Footer() {
             {/* একক অ্যাকসেন্ট CTA বাটন */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <Link
-                href="#signin"
+                href="/signin"
                 className="inline-flex items-center justify-center rounded-xl bg-[#DE2F2C] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#BD221F] active:bg-[#931815]"
               >
                 دخول الأعضاء

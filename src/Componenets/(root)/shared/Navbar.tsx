@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Button, Link } from "@heroui/react";
+import { Link } from "@heroui/react";
 import Image from "next/image";
 
 export default function AppNavbar() {
@@ -99,8 +99,8 @@ export default function AppNavbar() {
 
         {/* বাম পাশের অংশ: Outlined মেম্বার লগইন বাটন */}
         <div>
-          <Button
-            variant="outline"
+          <Link
+            href="/signin"
             className="group border border-[#1E4831]/40 bg-[#F9F5EC]/70 px-5 py-2.5 text-sm font-semibold text-[#1E4831] rounded-full flex flex-row items-center gap-2 transition-all duration-300 hover:border-[#1E4831] hover:bg-[#1E4831] hover:text-[#F9F5EC] active:bg-[#132F20]"
           >
             <span>
@@ -120,7 +120,7 @@ export default function AppNavbar() {
               </svg>
             </span>
             دخول الأعضاء
-          </Button>
+          </Link>
         </div>
       </nav>
 
