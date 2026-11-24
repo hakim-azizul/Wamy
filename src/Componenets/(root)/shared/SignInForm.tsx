@@ -24,7 +24,11 @@ export default function SignInForm() {
       setToken(data.token);
       router.push("/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تسجيل الدخول. حاول مرة أخرى.");
+      if (err instanceof TypeError) {
+        setError("تعذر الاتصال بالخادم. تأكد من تشغيل wamy-server على المنفذ 5000 ثم حاول مرة أخرى.");
+      } else {
+        setError(err instanceof Error ? err.message : "تعذر تسجيل الدخول. حاول مرة أخرى.");
+      }
     } finally {
       setSubmitting(false);
     }
