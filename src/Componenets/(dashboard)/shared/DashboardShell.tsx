@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   apiFetch,
   clearToken,
@@ -16,17 +16,42 @@ import {
   type UserResponse,
 } from "@/lib/api/api-client";
 import { ROLE_BADGE_CLASSES, ROLE_LABELS } from "@/lib/labels";
-import type { IUser } from "@/lib/types/users";
+import type { IUser, UserRole } from "@/lib/types/users";
 
 const DashboardUserContext = createContext<IUser | null>(null);
 
-/** Current authenticated user, provided by DashboardShell to role views. */
+/** Current authenticated user, provided by DashboardShell to every dashboard page. */
 export function useDashboardUser(): IUser | null {
   return useContext(DashboardUserContext);
 }
 
+interface NavItem {
+  href: string;
+  label: string;
+}
+
+const NAV_ITEMS: Record<UserRole, NavItem[]> = {
+  manager: [
+    { href: "/dashboard", label: "نظرة عامة" },
+    { href: "/dashboard/manager/supervisors", label: "المشرفون" },
+    { href: "/dashboard/manager/users", label: "كل المستخدمين" },
+    { href: "/dashboard/manager/students", label: "الطلاب وملفاتهم" },
+  ],
+  supervisor: [
+    { href: "/dashboard", label: "نظرة عامة" },
+    { href: "/dashboard/supervisor/students", label: "الطلاب" },
+    { href: "/dashboard/supervisor/students/new", label: "إضافة طالب" },
+  ],
+  student: [
+    { href: "/dashboard", label: "نظرة عامة" },
+    { href: "/dashboard/student/overview", label: "ملفي ودرجتي" },
+    { href: "/dashboard/student/profile", label: "بياناتي (5 أقسام)" },
+  ],
+};
+
 export default function DashboardShell({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +82,16 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     };
   }, [router]);
 
+  // Role guard: any /dashboard/<role>/... path is only allowed for that role.
+  const roleSegment = pathname?.match(/^\/dashboard\/([^/]+)/)?.[1];
+  const hasAccess = !roleSegment || roleSegment === user?.role;
+
+  useEffect(() => {
+    if (user && !hasAccess) {
+      router.replace("/dashboard");
+    }
+  }, [user, hasAccess, router]);
+
   function handleLogout() {
     clearToken();
     router.replace("/signin");
@@ -69,6 +104,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
       </div>
     );
   }
+
+  if (!user) return null;
+
+  const navItems = NAV_ITEMS[user.role];
+  const isActive = (href: string) =>
+    href === "/dashboard"
+      ? pathname === "/dashboard"
+      : pathname === href || pathname?.startsWith(`${href}/`);
 
   return (
     <DashboardUserContext.Provider value={user}>
@@ -87,16 +130,12 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
 
             <div className="flex items-center gap-3">
               <div className="text-left">
-                <p className="text-sm font-bold text-[#1E4831]">{user?.name ?? "—"}</p>
-                <p className="text-xs text-[#657F71]" dir="ltr">{user?.email ?? ""}</p>
+                <p className="text-sm font-bold text-[#1E4831]">{user.name}</p>
+                <p className="text-xs text-[#657F71]" dir="ltr">{user.email}</p>
               </div>
-              {user && (
-                <span
-                  className={`rounded-full border px-3 py-1 text-xs font-bold ${ROLE_BADGE_CLASSES[user.role]}`}
-                >
-                  {ROLE_LABELS[user.role]}
-                </span>
-              )}
+              <span className={`rounded-full border px-3 py-1 text-xs font-bold ${ROLE_BADGE_CLASSES[user.role]}`}>
+                {ROLE_LABELS[user.role]}
+              </span>
               <button
                 type="button"
                 onClick={handleLogout}
@@ -109,24 +148,32 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
         </header>
 
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 sm:px-6 lg:flex-row">
-          <aside className="w-full shrink-0 lg:w-56">
+          <aside className="w-full shrink-0 lg:w-60">
             <nav className="flex flex-col gap-1 rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-3">
-              <Link
-                href="/dashboard"
-                className="rounded-xl bg-[#1E4831] px-4 py-2.5 text-sm font-bold text-[#F9F5EC]"
-              >
-                لوحة التحكم
-              </Link>
+              {navItems.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`rounded-xl px-4 py-2.5 text-sm transition-colors ${
+                    isActive(item.href)
+                      ? "bg-[#1E4831] font-bold text-[#F9F5EC]"
+                      : "font-semibold text-[#3E5E4D] hover:bg-[#DCE6E0] hover:text-[#1E4831]"
+                  }`}
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <div className="my-2 border-t border-[#D5C9AE]" />
               <Link
                 href="/"
-                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#3E5E4D] transition-colors hover:bg-[#DCE6E0] hover:text-[#1E4831]"
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-[#657F71] transition-colors hover:bg-[#DCE6E0] hover:text-[#1E4831]"
               >
                 العودة للموقع
               </Link>
             </nav>
           </aside>
 
-          <main className="min-w-0 flex-1">{children}</main>
+          <main className="min-w-0 flex-1">{hasAccess ? children : null}</main>
         </div>
       </div>
     </DashboardUserContext.Provider>

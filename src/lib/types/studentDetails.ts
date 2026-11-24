@@ -37,7 +37,7 @@ export interface BaseStudentDetailCollection {
 export interface StudentPersonalInfo extends BaseStudentDetailCollection {
   fullNameAr: string; // الاسم الكامل (عربي)
   fullNameEn: string; // الاسم الكامل (إنجليزي)
-  passport: string; // رقم الجواز / الهوية
+  passport: string; // رقم الجواز / الهوية (normalized trim().toLowerCase() by the server)
   passportExpiryDate: Date | string; // تاريخ انتهاء الجواز
   iqamaExpiryDate: Date | string; // تاريخ انتهاء الإقامة
   universityStudentId: string; // رقم الطالب الجامعي

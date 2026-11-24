@@ -6,30 +6,31 @@ import {
   type UserResponse,
   type UsersResponse,
 } from "@/lib/api/api-client";
+import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/labels";
 import type { IUser } from "@/lib/types/users";
-import UsersTable from "../shared/UsersTable";
+import { FormMessage, TextField } from "../shared/FormFields";
 
 const EMPTY_FORM = { name: "", email: "", password: "", phone: "" };
 
-export default function ManagerView() {
-  const [users, setUsers] = useState<IUser[]>([]);
+export default function SupervisorsView() {
+  const [supervisors, setSupervisors] = useState<IUser[]>([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const loadUsers = useCallback(async () => {
+  const load = useCallback(async () => {
     try {
       const data = await apiFetch<UsersResponse>("/api/users");
-      setUsers(data.users);
+      setSupervisors(data.users.filter((user) => user.role === "supervisor"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحميل المستخدمين.");
+      setError(err instanceof Error ? err.message : "تعذر تحميل المشرفين.");
     }
   }, []);
 
   useEffect(() => {
-    void loadUsers();
-  }, [loadUsers]);
+    void load();
+  }, [load]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -49,7 +50,7 @@ export default function ManagerView() {
       });
       setSuccess(`تم إنشاء المشرف "${user.name}" بنجاح.`);
       setForm(EMPTY_FORM);
-      await loadUsers();
+      await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر إنشاء المشرف.");
     } finally {
@@ -60,42 +61,46 @@ export default function ManagerView() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-extrabold text-[#1E4831] sm:text-3xl">لوحة المدير</h1>
-        <p className="mt-1 text-sm text-[#3E5E4D]">
-          إنشاء حسابات المشرفين وعرض جميع المستخدمين في النظام.
-        </p>
+        <h1 className="text-2xl font-extrabold text-[#1E4831] sm:text-3xl">المشرفون</h1>
+        <p className="mt-1 text-sm text-[#3E5E4D]">يمكن للمدير إنشاء حسابات المشرفين فقط.</p>
       </div>
 
       <section className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-6 shadow-sm">
         <h2 className="mb-5 text-lg font-extrabold text-[#1E4831]">إنشاء مشرف جديد</h2>
         <form onSubmit={handleSubmit} dir="rtl" className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormField
+          <TextField
+            name="name"
             label="الاسم"
             value={form.name}
             onChange={(value) => setForm({ ...form, name: value })}
             placeholder="اسم المشرف"
+            required
           />
-          <FormField
+          <TextField
+            name="email"
             label="البريد الإلكتروني"
             type="email"
-            dir="ltr"
+            ltr
             value={form.email}
             onChange={(value) => setForm({ ...form, email: value })}
             placeholder="supervisor@example.com"
+            required
           />
-          <FormField
+          <TextField
+            name="password"
             label="كلمة المرور"
             type="password"
-            dir="ltr"
+            ltr
             value={form.password}
             onChange={(value) => setForm({ ...form, password: value })}
             placeholder="8 أحرف على الأقل"
+            required
           />
-          <FormField
+          <TextField
+            name="phone"
             label="الهاتف (اختياري)"
             type="tel"
-            dir="ltr"
-            required={false}
+            ltr
             value={form.phone}
             onChange={(value) => setForm({ ...form, phone: value })}
             placeholder="+20 ..."
@@ -117,57 +122,40 @@ export default function ManagerView() {
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-lg font-extrabold text-[#1E4831]">جميع المستخدمين ({users.length})</h2>
-        <UsersTable users={users} showScore />
+        <h2 className="text-lg font-extrabold text-[#1E4831]">المشرفون ({supervisors.length})</h2>
+        <div className="overflow-x-auto rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC]">
+          <table className="w-full min-w-[560px] text-right text-sm">
+            <thead className="bg-[#DCE6E0] text-[#1E4831]">
+              <tr>
+                <th className="px-4 py-3 font-bold">الاسم</th>
+                <th className="px-4 py-3 font-bold">البريد</th>
+                <th className="px-4 py-3 font-bold">الهاتف</th>
+                <th className="px-4 py-3 font-bold">الحالة</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#D5C9AE]/70">
+              {supervisors.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-8 text-center text-[#657F71]">لا يوجد مشرفون بعد.</td>
+                </tr>
+              ) : (
+                supervisors.map((supervisor) => (
+                  <tr key={supervisor._id} className="hover:bg-white">
+                    <td className="px-4 py-3 font-semibold">{supervisor.name}</td>
+                    <td className="px-4 py-3" dir="ltr">{supervisor.email}</td>
+                    <td className="px-4 py-3" dir="ltr">{supervisor.phone ?? "—"}</td>
+                    <td className="px-4 py-3">
+                      <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_BADGE_CLASSES[supervisor.status]}`}>
+                        {STATUS_LABELS[supervisor.status]}
+                      </span>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </section>
     </div>
-  );
-}
-
-function FormField({
-  label,
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  required = true,
-  dir,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  type?: string;
-  placeholder?: string;
-  required?: boolean;
-  dir?: "ltr" | "rtl";
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-semibold text-[#1E4831]">{label}</label>
-      <input
-        type={type}
-        dir={dir}
-        required={required}
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-xl border border-[#D5C9AE] bg-white px-4 py-2.5 text-sm text-[#1E4831] outline-none transition-colors placeholder:text-[#657F71] focus:border-[#1E4831] focus:ring-2 focus:ring-[#1E4831]/15"
-      />
-    </div>
-  );
-}
-
-function FormMessage({ text, tone }: { text: string; tone: "error" | "success" }) {
-  return (
-    <p
-      role="alert"
-      className={`rounded-xl border px-4 py-3 text-sm font-medium sm:col-span-2 ${
-        tone === "error"
-          ? "border-[#DE2F2C]/25 bg-[#FDE8E7] text-[#931815]"
-          : "border-[#1E4831]/20 bg-[#DCE6E0] text-[#1E4831]"
-      }`}
-    >
-      {text}
-    </p>
   );
 }

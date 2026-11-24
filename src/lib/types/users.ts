@@ -1,16 +1,15 @@
 export type UserRole = "manager" | "supervisor" | "student";
 export type UserStatus = "active" | "suspended";
 
-/** Safe user object returned by the WamyDorm Express API (never includes password). */
 export interface IUser {
-  _id: string; // automatic created by mongodb
+  _id: string;
   name: string;
-  email: string; // Login email (unique, normalized trim().toLowerCase())
-  role: UserRole; // "manager" | "supervisor" | "student"
-  status: UserStatus; // Default: "active"
+  email: string; // unique, normalized trim().toLowerCase()
+  role: UserRole;
+  status: UserStatus; // default: "active"
   phone: string | null;
-  createdBy: string | null; // name of who created this user
-  score?: number; // Only for student (initialized from INITIAL_REVIEW_SCORE, editable later)
+  createdBy: string | null; // creator's name (e.g., logged-in manager/supervisor name)
+  score?: number; // ONLY present when role === "student" (initialized from INITIAL_REVIEW_SCORE)
   createdAt: Date | string;
   updatedAt: Date | string;
 }

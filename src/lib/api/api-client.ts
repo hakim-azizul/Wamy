@@ -1,3 +1,4 @@
+import type { StudentFullDetailsBundle } from "@/lib/types/studentDetails";
 import type { IUser } from "@/lib/types/users";
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
@@ -7,6 +8,11 @@ const TOKEN_STORAGE_KEY = "wamy_token";
 export type AuthResponse = { token: string; user: IUser };
 export type UserResponse = { user: IUser };
 export type UsersResponse = { users: IUser[] };
+export type StudentDetailsBundleResponse = StudentFullDetailsBundle;
+export type SectionSaveResponse = {
+  section: Record<string, unknown> & { _id?: string; userId?: string; isCompleted?: boolean };
+  completionSummary: { completedSections: number; totalSections: 5 };
+};
 
 export class ApiError extends Error {
   readonly status: number;

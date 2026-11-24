@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import RoleBasedView from "@/Componenets/(dashboard)/shared/RoleBasedView";
+import DashboardOverview from "@/Componenets/(dashboard)/shared/DashboardOverview";
 
 export const metadata: Metadata = {
   title: "لوحة التحكم | السكن الجامعي",
 };
 
 export default function DashboardPage() {
-  return <RoleBasedView />;
+  return <DashboardOverview />;
 }

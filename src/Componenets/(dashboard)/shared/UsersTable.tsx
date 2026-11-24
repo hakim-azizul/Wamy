@@ -1,25 +1,38 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { formatDate } from "@/lib/format";
-import { ROLE_BADGE_CLASSES, ROLE_LABELS, STATUS_LABELS } from "@/lib/labels";
+import {
+  ROLE_BADGE_CLASSES,
+  ROLE_LABELS,
+  STATUS_BADGE_CLASSES,
+  STATUS_LABELS,
+} from "@/lib/labels";
 import type { IUser } from "@/lib/types/users";
 
 export default function UsersTable({
   users,
   showScore = false,
+  showCreatedBy = false,
+  onScoreChange,
 }: {
   users: IUser[];
   showScore?: boolean;
+  showCreatedBy?: boolean;
+  onScoreChange?: (userId: string, score: number) => void;
 }) {
+  const columnCount = 6 + (showScore ? 1 : 0) + (showCreatedBy ? 1 : 0);
+
   return (
     <div className="overflow-x-auto rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC]">
-      <table className="w-full min-w-[720px] text-right text-sm">
+      <table className="w-full min-w-[760px] text-right text-sm">
         <thead className="bg-[#DCE6E0] text-[#1E4831]">
           <tr>
             <th className="px-4 py-3 font-bold">الاسم</th>
             <th className="px-4 py-3 font-bold">البريد الإلكتروني</th>
             <th className="px-4 py-3 font-bold">الدور</th>
             <th className="px-4 py-3 font-bold">الحالة</th>
+            {showCreatedBy && <th className="px-4 py-3 font-bold">أنشأه</th>}
             <th className="px-4 py-3 font-bold">الهاتف</th>
             {showScore && <th className="px-4 py-3 font-bold">الدرجة</th>}
             <th className="px-4 py-3 font-bold">تاريخ الإنشاء</th>
@@ -28,10 +41,7 @@ export default function UsersTable({
         <tbody className="divide-y divide-[#D5C9AE]/70">
           {users.length === 0 ? (
             <tr>
-              <td
-                colSpan={showScore ? 7 : 6}
-                className="px-4 py-8 text-center text-sm text-[#657F71]"
-              >
+              <td colSpan={columnCount} className="px-4 py-8 text-center text-sm text-[#657F71]">
                 لا توجد بيانات لعرضها.
               </td>
             </tr>
@@ -41,17 +51,30 @@ export default function UsersTable({
                 <td className="px-4 py-3 font-semibold text-[#1E4831]">{user.name}</td>
                 <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{user.email}</td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-xs font-bold ${ROLE_BADGE_CLASSES[user.role]}`}
-                  >
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${ROLE_BADGE_CLASSES[user.role]}`}>
                     {ROLE_LABELS[user.role]}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-[#3E5E4D]">{STATUS_LABELS[user.status]}</td>
+                <td className="px-4 py-3">
+                  <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${STATUS_BADGE_CLASSES[user.status]}`}>
+                    {STATUS_LABELS[user.status]}
+                  </span>
+                </td>
+                {showCreatedBy && (
+                  <td className="px-4 py-3 text-[#3E5E4D]">{user.createdBy ?? "—"}</td>
+                )}
                 <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{user.phone ?? "—"}</td>
                 {showScore && (
-                  <td className="px-4 py-3 font-bold text-[#1E4831]">
-                    {user.studentProfile?.score ?? "—"}
+                  <td className="px-4 py-3">
+                    {onScoreChange ? (
+                      <ScoreCell
+                        userId={user._id}
+                        score={user.score}
+                        onSave={onScoreChange}
+                      />
+                    ) : (
+                      <span className="font-bold text-[#1E4831]">{user.score ?? "—"}</span>
+                    )}
                   </td>
                 )}
                 <td className="px-4 py-3 text-[#657F71]">{formatDate(user.createdAt)}</td>
@@ -60,6 +83,44 @@ export default function UsersTable({
           )}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function ScoreCell({
+  userId,
+  score,
+  onSave,
+}: {
+  userId: string;
+  score?: number;
+  onSave: (userId: string, score: number) => void;
+}) {
+  const [value, setValue] = useState(String(score ?? 0));
+
+  useEffect(() => {
+    setValue(String(score ?? 0));
+  }, [score]);
+
+  return (
+    <div className="flex items-center gap-2" dir="ltr">
+      <input
+        type="number"
+        step="any"
+        value={value}
+        onChange={(event) => setValue(event.target.value)}
+        className="w-20 rounded-lg border border-[#D5C9AE] bg-white px-2 py-1.5 text-sm text-[#1E4831] outline-none focus:border-[#1E4831]"
+      />
+      <button
+        type="button"
+        onClick={() => {
+          const next = Number(value);
+          if (Number.isFinite(next)) onSave(userId, next);
+        }}
+        className="cursor-pointer rounded-lg bg-[#1E4831] px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#132F20]"
+      >
+        حفظ
+      </button>
     </div>
   );
 }
