@@ -142,8 +142,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `seed-manager.mjs` — drops any legacy `users` collection, creates the manager through Better
   Auth's native sign-up if missing, sets `role: "manager"`/`status: "active"` on the `user` doc,
   verifies credentials with Better Auth, and reports success.
-- `index.js` — CORS callback reflects any allowed local origin (localhost + 127.0.0.1:3000 and
-  `CLIENT_ORIGIN` list), sends `Access-Control-Allow-Private-Network`, 403 for disallowed origins.
+- `index.js` — **CORS runs before `express.json()` and all routes** (so OPTIONS preflights get full
+  headers). Explicit `methods` (GET/POST/PUT/PATCH/DELETE/OPTIONS), `allowedHeaders`
+  (Content-Type, Authorization, X-Access-Token), `credentials`, `optionsSuccessStatus: 204`,
+  `maxAge: 600`; blocked origins are logged with the exact value to add to `CLIENT_ORIGIN`.
+  Actual error responses (e.g. 401) also carry `Access-Control-Allow-Origin`.
 - `package.json` — added dependency **`better-auth@1.7.27`** and `start`/`dev`/`seed` scripts.
 - `.env` — corrected `PORT` from the invalid `http://localhost:5000` to `5000`.
 - Removed: `utils/password.js` (obsolete scrypt hash), `utils/token.js` (obsolete HMAC issuer).
@@ -185,8 +188,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   desktop rail (collapsible via chevron), mobile drawer + overlay (hamburger in header), active
   route highlighting with `usePathname()`/`useSearchParams()` (longest-href match so `/new`
   doesn't also highlight its parent), role badge + user name + logout in the footer.
-- `DashboardShell.tsx` — refactored to render `DashboardSidebar` (inside `Suspense`), owns collapse
-  and mobile-drawer state, keeps the role guard, header now shows a mobile menu button + user badge.
+- `DashboardShell.tsx` — renders `DashboardSidebar` (inside `Suspense`), owns collapse/mobile state,
+  keeps role guard, and now **surfaces auth/network/CORS failures** in an RTL error card with
+  Retry / Login actions instead of silently redirecting.
+- `(root)/shared/Navbar.tsx` + `Footer.tsx` — logo src corrected to `/Logo.png`.
+- `(root)/Home/welcomeMsg.tsx` — missing jpegs replaced with existing `/hero-building.jpeg`.
 - `student/ProfileForm.tsx` — supports `?section=<key>` deep links from the sidebar; renders
   email/room/flat from `bundle.user` as read-only fields (`ReadOnlyField`) in personal/academic.
 - `shared/FormFields.tsx` — added `ReadOnlyField` for canonical user fields.
@@ -263,10 +269,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `DB_URI` (required) — MongoDB connection string.
 - `DB_NAME` — **must equal `WamyDorm`** on both projects.
 - `INITIAL_REVIEW_SCORE` (optional, default 100).
-- `CLIENT_ORIGIN` — **the deployed wamy-client URL**, e.g. `https://wamy-client.vercel.app`
-  (comma-separated if several). This is what CORS allows.
+- `CLIENT_ORIGIN` — **required**: `https://wamy-gray.vercel.app` (comma-separated if several).
+  This is what CORS allows, and it also serves as the fallback JWKS/sign-up origin.
 - `CLIENT_URL` (or `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL`) — same deployed client URL;
   used to find `/api/auth/jwks` for JWT verification AND server-side Better Auth sign-up.
+  Setting **only `CLIENT_ORIGIN=https://wamy-gray.vercel.app`** is sufficient for both CORS and JWKS.
 - **No `AUTH_SECRET` on wamy-server** — tokens are verified with Better Auth's public JWKS keys.
 - `PORT=5000` is for **local only**; Vercel serverless ignores it (`isVercel` skips `app.listen`).
 
@@ -292,13 +299,25 @@ Never commit real values. Always **Redeploy** after any Vercel env change.
   DB name, allowed CORS origins and client auth URL, plus explicit `console.error` warnings for
   missing `DB_URI`, empty production CORS origins, and localhost client auth URL in production.
   Logs the resolved JWKS endpoint and confirms AUTH_SECRET is unused on the server. No secrets logged.
-- Server CORS accepts `CLIENT_ORIGIN`, `CLIENT_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, `BETTER_AUTH_URL`;
-  dev-only localhost origins are omitted in production. Blocked origins are logged with a hint.
+- Server CORS accepts `CLIENT_ORIGIN`, `CLIENT_ORIGINS`, `CLIENT_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`,
+  `BETTER_AUTH_URL`; dev-only localhost origins are omitted in production. Blocked origins are
+  logged with the exact value to add. Preflight returns 204 with
+  `Access-Control-Allow-Origin`, `Access-Control-Allow-Headers: Content-Type, Authorization, X-Access-Token`,
+  and `Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE,OPTIONS` — also on error responses.
+  Verified locally with origin `https://wamy-gray.vercel.app` (204 allowed, unknown origin 403).
+- Logo asset: `public/Logo.png` is the real filename (capital L); Navbar/Footer now reference
+  `/Logo.png` (the previous lowercase `/logo.png` 404'd on Linux/Vercel and made
+  `/_next/image` return 400). Missing welcome-section jpegs now use the existing
+  `/hero-building.jpeg`.
 - `auth.ts` sets `baseURL`/`trustedOrigins` and JWT plugin `issuer`/`audience`; `auth-client.ts`
   uses only the public URL plus `jwtClient()`.
 - JWT flow (verified locally): `/api/auth/jwks` → 200 with keys; Better Auth sign-in → 200 with
   cookie; `/api/auth/token` → 200 with JWT; Express `/api/auth/me` with that JWT → 200 (manager);
   bogus token → 401; missing token → 401.
+- CORS fix verification: with `CLIENT_ORIGIN=https://wamy-gray.vercel.app`, OPTIONS
+  `/api/auth/me` → 204 with matching ACAO and full allow-headers/methods; unknown origin → 403;
+  a 401 response still carries `Access-Control-Allow-Origin`. `node --check`, `npx tsc --noEmit`,
+  `npm run build` all pass.
 
 ---
 
@@ -358,9 +377,11 @@ Never commit real values. Always **Redeploy** after any Vercel env change.
   origins/client URL without secrets; `npx tsc --noEmit` + `npm run build` pass with 16 routes.
 
 ## 7. Next steps
-- **Vercel:** set the exact env vars from section 4 on BOTH projects, then trigger a **fresh
-  Redeploy** (NEXT_PUBLIC_API_URL is baked at build time). Check each project's function logs for
-  `[config]` / `[cors]` / `[auth]` diagnostics.
+- **Vercel:** on `wamy-server` set `CLIENT_ORIGIN=https://wamy-gray.vercel.app` (and optionally
+  `CLIENT_URL` to the same value), then **Redeploy the server**. On `wamy-client`, confirm
+  `NEXT_PUBLIC_API_URL=https://wamy-server.vercel.app`, `BETTER_AUTH_URL=https://wamy-gray.vercel.app`,
+  `DB_URI`, `DB_NAME`, `BETTER_AUTH_SECRET`, then **Redeploy the client** (NEXT_PUBLIC_* is baked
+  at build time). Check logs for `[config]` / `[cors]` / `[auth]` diagnostics.
 - Run locally with `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.
 - Keep `DB_NAME` identical in both `.env` files; never reintroduce a plural `users` helper.
 - If opening the client from a LAN IP / other hostname, add that exact origin to `CLIENT_ORIGIN`

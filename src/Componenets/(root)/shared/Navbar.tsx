@@ -64,7 +64,7 @@ export default function AppNavbar() {
           {/* লোগোর জায়গা ও ব্র্যান্ড নাম */}
           <Link href="/" className="flex items-center gap-3">
             <Image
-              src="/logo.png"
+              src="/Logo.png"
               alt="WAMY Logo"
               width={160}
               height={50}

@@ -72,7 +72,7 @@ export default function WelcomeMsg() {
               {/* বড় ভার্টিকাল কার্ড: الفناء الداخلي */}
               <div className="group relative col-span-7 h-full overflow-hidden rounded-3xl border border-[#D5C9AE] bg-[#FAF7F2] shadow-md">
                 <Image
-                  src="/courtyard.jpeg"
+                  src="/hero-building.jpeg"
                   alt="الفناء الداخلي"
                   fill
                   unoptimized
@@ -89,7 +89,7 @@ export default function WelcomeMsg() {
                 {/* উপরের কার্ড: ركن المكتبة */}
                 <div className="group relative h-1/2 w-full overflow-hidden rounded-3xl border border-[#D5C9AE] bg-[#FAF7F2] shadow-md">
                   <Image
-                    src="/library-corner.jpeg"
+                    src="/hero-building.jpeg"
                     alt="ركن المكتبة"
                     fill
                     unoptimized
@@ -104,7 +104,7 @@ export default function WelcomeMsg() {
                 {/* নিচের কার্ড: المطبخ المشترك */}
                 <div className="group relative h-1/2 w-full overflow-hidden rounded-3xl border border-[#D5C9AE] bg-[#FAF7F2] shadow-md">
                   <Image
-                    src="/shared-kitchen.jpeg"
+                    src="/hero-building.jpeg"
                     alt="المطبخ المشترك"
                     fill
                     unoptimized

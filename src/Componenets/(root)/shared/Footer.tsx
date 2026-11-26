@@ -32,7 +32,7 @@ export default function Footer() {
           <div className="lg:col-span-5 space-y-4">
             <Link href="/" className="inline-flex items-center gap-3">
               <Image
-                src="/logo.png"
+                src="/Logo.png"
                 alt="WAMY Logo"
                 width={150}
                 height={46}
