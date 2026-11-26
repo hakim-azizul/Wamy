@@ -243,13 +243,41 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 
 ## 4. Environment variables
 
-**Server `.env`:** `DB_URI` (required), `DB_NAME` **`WamyDorm`** (must match client),
-`PORT=5000` (a bare port number — NOT a URL), `INITIAL_REVIEW_SCORE?`, `AUTH_SECRET`,
-`CLIENT_ORIGIN?` (comma-separated extra browser origins, e.g. LAN IP),
-`CLIENT_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL` (client auth origin for native sign-up).
-**Client `.env`:** `DB_URI`, `DB_NAME` (default WamyDorm), `BETTER_AUTH_SECRET`,
-`NEXT_PUBLIC_API_URL` (default `http://localhost:5000`), `NEXT_PUBLIC_BETTER_AUTH_URL`.
-Never commit real values.
+**Server Vercel project env (exact names):**
+- `DB_URI` (required) — MongoDB connection string.
+- `DB_NAME` — **must equal `WamyDorm`** on both projects.
+- `AUTH_SECRET` — strong secret (never the dev default in production).
+- `INITIAL_REVIEW_SCORE` (optional, default 100).
+- `CLIENT_ORIGIN` — **the deployed wamy-client URL**, e.g. `https://wamy-client.vercel.app`
+  (comma-separated if several). This is what CORS allows.
+- `CLIENT_URL` (or `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL`) — same deployed client URL;
+  used for server-side Better Auth sign-up when creating supervisors/students.
+- `PORT=5000` is for **local only**; Vercel serverless ignores it (`isVercel` skips `app.listen`).
+
+**Client Vercel project env (exact names):**
+- `NEXT_PUBLIC_API_URL` — **required in production**: deployed wamy-server URL, e.g.
+  `https://wamy-server.vercel.app`. No localhost fallback in production; `NEXT_PUBLIC_*`
+  is inlined at BUILD time, so a new value requires a **fresh Redeploy**.
+- `NEXT_PUBLIC_BETTER_AUTH_URL` (optional) — deployed client URL if Better Auth needs an explicit
+  base URL; otherwise same-origin `/api/auth` is used.
+- `DB_URI` — MongoDB URI for the Better Auth route handler (`src/lib/auth.ts`).
+- `DB_NAME` — `WamyDorm`.
+- `BETTER_AUTH_SECRET` — same secret value used by Better Auth.
+- `BETTER_AUTH_URL` (optional) — deployed client URL for server-side Better Auth callbacks.
+Never commit real values. Always **Redeploy** after any Vercel env change.
+
+### Deployment diagnostics (added)
+- Client `getApiBaseUrl()` validates `NEXT_PUBLIC_API_URL` as absolute http(s); in production a
+  missing/invalid value throws a clear error naming the variable instead of silently using
+  `http://localhost:5000`; network failures now report the resolved base URL.
+- Server `config.js` exposes `logConfigDiagnostics()` (called at startup) printing environment,
+  DB name, allowed CORS origins and client auth URL, plus explicit `console.error` warnings for
+  missing `DB_URI`, empty production CORS origins, localhost client auth URL in production, and
+  the default `AUTH_SECRET`. No secrets are logged.
+- Server CORS accepts `CLIENT_ORIGIN`, `CLIENT_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, `BETTER_AUTH_URL`;
+  dev-only localhost origins are omitted in production. Blocked origins are logged with a hint.
+- `auth.ts` sets `baseURL`/`trustedOrigins` from the deployed URL env vars and logs a clear error
+  when `DB_URI` is missing; `auth-client.ts` uses only the public URL.
 
 ---
 
@@ -305,9 +333,14 @@ Never commit real values.
   without severity → 400; invalid severity → 400; increase with severity sent → 201 and stored
   severity `null`; decrease with `moderate` → 201 and stored correctly; score chain 100→110→107;
   manager list → newest-first (`-3` first); score restored to 100 and test rows removed.
+- Deployment milestone: `node --check` all server files; `logConfigDiagnostics()` prints resolved
+  origins/client URL without secrets; `npx tsc --noEmit` + `npm run build` pass with 16 routes.
 
 ## 7. Next steps
-- Run both servers: `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.
+- **Vercel:** set the exact env vars from section 4 on BOTH projects, then trigger a **fresh
+  Redeploy** (NEXT_PUBLIC_API_URL is baked at build time). Check each project's function logs for
+  `[config]` / `[cors]` / `[auth]` diagnostics.
+- Run locally with `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.
 - Keep `DB_NAME` identical in both `.env` files; never reintroduce a plural `users` helper.
 - If opening the client from a LAN IP / other hostname, add that exact origin to `CLIENT_ORIGIN`
   on the server and set `NEXT_PUBLIC_API_URL` to the reachable API host.
