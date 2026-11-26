@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   apiFetch,
   type SectionSaveResponse,
@@ -58,6 +59,8 @@ function toPayload(section: SectionMeta, values: FormValues): Record<string, unk
 }
 
 export default function ProfileForm() {
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get("section");
   const [active, setActive] = useState(0);
   const [values, setValues] = useState<ValuesBySection>(emptyValues);
   const [completed, setCompleted] = useState<Record<StudentProfileSectionKey, boolean>>({
@@ -110,6 +113,27 @@ export default function ProfileForm() {
     };
   }, []);
 
+  // Sidebar links deep-link to a section: /dashboard/student/profile?section=...
+  useEffect(() => {
+    if (!sectionParam) return;
+    const index = STUDENT_DETAIL_SECTIONS.findIndex((item) => item.key === sectionParam);
+    if (index >= 0) setActive(index);
+  }, [sectionParam]);
+
+  function selectSection(index: number) {
+    setActive(index);
+    setError("");
+    setSuccess("");
+    const key = STUDENT_DETAIL_SECTIONS[index]?.key;
+    if (key) {
+      window.history.replaceState(
+        null,
+        "",
+        `/dashboard/student/profile?section=${key}`,
+      );
+    }
+  }
+
   const section = STUDENT_DETAIL_SECTIONS[active];
   const sectionValuesState = values[section.key];
 
@@ -146,7 +170,7 @@ export default function ProfileForm() {
       setCompletion(response.completionSummary.completedSections);
       setSuccess(`تم حفظ قسم "${section.label}" بنجاح.`);
       if (active < STUDENT_DETAIL_SECTIONS.length - 1) {
-        setActive(active + 1);
+        selectSection(active + 1);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "تعذر حفظ البيانات.");
@@ -188,11 +212,7 @@ export default function ProfileForm() {
           <button
             key={item.key}
             type="button"
-            onClick={() => {
-              setActive(index);
-              setError("");
-              setSuccess("");
-            }}
+            onClick={() => selectSection(index)}
             className={`cursor-pointer rounded-xl border px-4 py-2.5 text-xs font-bold transition-colors ${
               index === active
                 ? "border-[#1E4831] bg-[#1E4831] text-[#F9F5EC]"
@@ -231,7 +251,7 @@ export default function ProfileForm() {
             {active > 0 && (
               <button
                 type="button"
-                onClick={() => setActive(active - 1)}
+                onClick={() => selectSection(active - 1)}
                 className="cursor-pointer rounded-xl border border-[#D5C9AE] bg-white px-6 py-2.5 text-sm font-bold text-[#1E4831] transition-colors hover:bg-[#DDD1B2]/60"
               >
                 السابق

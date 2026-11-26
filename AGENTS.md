@@ -79,8 +79,28 @@ native MongoDB driver). Keep it updated after every milestone. Do NOT create `wa
   stores the bearer token, and shows a clear "server not reachable" hint on network errors.
 - `src/lib/types/users.ts`, `src/lib/types/studentDetails.ts`, `src/lib/studentDetailsMeta.ts`,
   `src/lib/labels.ts`, `src/lib/format.ts`.
-- Dashboard shell with dynamic nav + role guard; manager/supervisor/student views and routes
-  under `src/app/(dashboard)/dashboard/...` and `src/Componenets/(dashboard)/...` (unchanged by this fix).
+- `src/lib/dashboardNav.ts` — single source of truth for the role -> route map (icons from
+  `lucide-react`), including the five student detail sections as query-param deep links.
+- `src/Componenets/(dashboard)/shared/DashboardSidebar.tsx` — **responsive sidebar**: RTL fixed
+  desktop rail (collapsible via chevron), mobile drawer + overlay (hamburger in header), active
+  route highlighting with `usePathname()`/`useSearchParams()` (longest-href match so `/new`
+  doesn't also highlight its parent), role badge + user name + logout in the footer.
+- `DashboardShell.tsx` — refactored to render `DashboardSidebar` (inside `Suspense`), owns collapse
+  and mobile-drawer state, keeps the role guard, header now shows a mobile menu button + user badge.
+- `student/ProfileForm.tsx` — supports `?section=<key>` deep links from the sidebar (syncs the
+  active tab; tab buttons update the URL via `history.replaceState`).
+- `src/app/(dashboard)/dashboard/student/profile/page.tsx` — wraps `ProfileForm` in `Suspense`
+  (required for `useSearchParams()`).
+- Dashboard routes/views otherwise unchanged.
+
+### Sidebar role -> route mapping
+- **Shared:** `/dashboard` (overview) for all roles.
+- **manager:** `/dashboard/manager/supervisors`, `/dashboard/manager/users`,
+  `/dashboard/manager/students`.
+- **supervisor:** `/dashboard/supervisor/students`, `/dashboard/supervisor/students/new`.
+- **student:** `/dashboard/student/overview`, `/dashboard/student/profile`, plus five children of
+  the profile route: `?section=personal|academic|skills|achievements|additional`.
+- "العودة للموقع" (`/`) is shown to every role; logout lives in the sidebar footer.
 
 ---
 
@@ -146,6 +166,8 @@ Never commit real values.
 - CORS check after fix: login from origins `http://localhost:3000` and `http://127.0.0.1:3000`
   both returned 200 with a matching `Access-Control-Allow-Origin`; an unknown LAN origin was 403.
   `npx tsc --noEmit` and `npm run build` still pass.
+- Sidebar milestone: `npx tsc --noEmit` and `npm run build` pass; all 11 routes still generated
+  (no new routes — the five student sections are deep links into `/dashboard/student/profile`).
 
 ## 7. Next steps
 - Run both servers: `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.
