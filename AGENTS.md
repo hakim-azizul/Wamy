@@ -20,8 +20,10 @@ native MongoDB driver). Keep it updated after every milestone. Do NOT create `wa
   hex string) — the same id Better Auth uses in `account.userId`.
 - Passwords are hashed by Better Auth in `account.password` (`providerId: "credential"`).
   The old custom scrypt helper (`wamy-server/utils/password.js`) was removed.
-- Login UI still posts to Express `/api/auth/login`, but Express now verifies credentials with
-  **`verifyPassword` from `better-auth/crypto`** against Better Auth's `account` record.
+- **JWT auth flow:** the UI signs in through Better Auth (`/api/auth/sign-in/email`), then gets a
+  signed JWT from `/api/auth/token` (JWT plugin). `apiFetch` sends it as `Authorization: Bearer
+  <token>` to wamy-server, which verifies it with `jose` against Better Auth's `/api/auth/jwks`.
+  No HMAC secret or token issuer exists on wamy-server; `POST /api/auth/login` there returns 410.
 - Managed account creation (manager -> supervisor, supervisor -> student) goes through
   **Better Auth's native sign-up** (`POST {clientAuthUrl}/api/auth/sign-up/email`), then app fields
   (`role`, `status`, `phone`, `createdBy`) are patched onto the same `user` doc. Student-only fields
@@ -107,10 +109,10 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   Better Auth sign-up then patches app fields; attaches `score`/`roomNumber`/`flatNumber` ONLY for
   students; `listUsers()`, `updateStudentScore()`; **`deleteUserCascade()`** removes `user` +
   `account` + `session` + (for students) all 5 detail collections by `userId`.
-- `routes/auth.js` — login verifies via `better-auth/crypto` `verifyPassword()` against
-  `account.password`; issues the existing isolated HMAC bearer token.
-- `middleware.js` — `verifyUser`, `isManager`, `isSupervisor`, `isStudent`,
-  `isManagerOrSupervisor` (office-only guard for CV PATCH and score changes).
+- `routes/auth.js` — `GET /me` only; `POST /login` returns 410 (tokens come from Better Auth).
+- `middleware.js` — `verifyUser` **awaits `verifyToken()`**, attaches `req.claims`/`req.userId`/
+  `req.user` from the DB; 401 on missing/invalid/expired JWT. Also `isManager`, `isSupervisor`,
+  `isStudent`, `isManagerOrSupervisor`.
 - `db.js` — adds `scoreTransactionsCollection()` + `{studentUserId, createdAt}` index.
 - `utils/scoreValidation.js` — **created**: `validateScoreChange()` (non-zero integer delta,
   required reason, conditional severity, strip on increase), `buildTransactionFilter()`,
@@ -129,7 +131,13 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   `patchStudentSection()` (partial `$set`, `null` clears, untouched fields preserved, upsert-safe).
 - `utils/studentDetailsValidation.js` — adds `validatePartialSection()` (only supplied keys
   validated; rejects unknown keys and canonical user fields email/name/roomNumber/flatNumber).
-- `utils/validation.js`, `utils/token.js`.
+- `utils/validation.js`.
+- **`utils/tokens.js`** — **created** (replaces removed `utils/token.js`): `verifyToken()` uses
+  `jose` `createRemoteJWKSet(new URL(`${clientAuthUrl}/api/auth/jwks`))` + `jwtVerify()` with
+  issuer/audience from the client baseURL. No local secret and no token issuer.
+- **`package.json`** — added `jose` dependency.
+- `config.js` — removed `authSecret`/`AUTH_SECRET` entirely; logs the JWKS endpoint and that
+  AUTH_SECRET is not used on the server.
 - `index.js` — cleaned up config import ordering (no behavior change).
 - `seed-manager.mjs` — drops any legacy `users` collection, creates the manager through Better
   Auth's native sign-up if missing, sets `role: "manager"`/`status: "active"` on the `user` doc,
@@ -138,10 +146,18 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   `CLIENT_ORIGIN` list), sends `Access-Control-Allow-Private-Network`, 403 for disallowed origins.
 - `package.json` — added dependency **`better-auth@1.7.27`** and `start`/`dev`/`seed` scripts.
 - `.env` — corrected `PORT` from the invalid `http://localhost:5000` to `5000`.
-- Removed: `utils/password.js` (obsolete custom scrypt hash/verify).
+- Removed: `utils/password.js` (obsolete scrypt hash), `utils/token.js` (obsolete HMAC issuer).
 
 ### Client (wamy-client)
-- `src/lib/auth.ts` — Better Auth Mongo adapter now uses `client.db(process.env.DB_NAME || "WamyDorm")`.
+- `src/lib/auth.ts` — Better Auth Mongo adapter + **`jwt()` plugin** exposing `/api/auth/token`
+  and `/api/auth/jwks`; sets `baseURL`, `trustedOrigins`, JWT `issuer`/`audience`=baseURL,
+  `expirationTime: "1h"`.
+- `src/lib/auth-client.ts` — **`jwtClient()` plugin**, `fetchAuthJwt()` (`$fetch("/token")`),
+  `jwtExpiry()` helper; exports `authClient`, `signIn`, `signUp`, `useSession`.
+- `src/lib/api/api-client.ts` — `getBearerToken()` refreshes the JWT from Better Auth when the
+  cached one is missing/near expiry; `apiFetch` always sends `Authorization: Bearer <token>`.
+- `src/Componenets/(root)/shared/SignInForm.tsx` — signs in via `authClient.signIn.email()`,
+  fetches the JWT and stores it before navigating to `/dashboard`.
 - `src/lib/auth-client.ts`, `src/app/api/auth/[...all]/route.ts` — unchanged Better Auth client/handler.
 - `src/lib/api/api-client.ts` — token storage + `apiFetch<T>()` using `NEXT_PUBLIC_API_URL`
   (default `http://localhost:5000`); `SignInForm` calls Express `/api/auth/login` (custom route),
@@ -225,8 +241,8 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 | Method | Path | Access | Purpose |
 |---|---|---|---|
 | GET | `/` | public | Health check |
-| POST | `/api/auth/login` | public | Express login; Better Auth credential verification; returns `{ token, user }` |
-| GET | `/api/auth/me` | auth | current safe user from `user` collection |
+| POST | `/api/auth/login` | public | **deprecated — 410**; sign in via Better Auth `/api/auth/sign-in/email` |
+| GET | `/api/auth/me` | Bearer JWT | current safe user; JWT verified via Better Auth JWKS |
 | POST | `/api/users/supervisors` | manager | native Better Auth sign-up + role patch |
 | POST | `/api/users/students` | supervisor | native sign-up + student-only patch (`score`, `roomNumber`, `flatNumber`, createdBy) |
 | GET | `/api/users` | auth | manager → all, supervisor → students, student → self |
@@ -246,12 +262,12 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 **Server Vercel project env (exact names):**
 - `DB_URI` (required) — MongoDB connection string.
 - `DB_NAME` — **must equal `WamyDorm`** on both projects.
-- `AUTH_SECRET` — strong secret (never the dev default in production).
 - `INITIAL_REVIEW_SCORE` (optional, default 100).
 - `CLIENT_ORIGIN` — **the deployed wamy-client URL**, e.g. `https://wamy-client.vercel.app`
   (comma-separated if several). This is what CORS allows.
 - `CLIENT_URL` (or `BETTER_AUTH_URL` / `NEXT_PUBLIC_BETTER_AUTH_URL`) — same deployed client URL;
-  used for server-side Better Auth sign-up when creating supervisors/students.
+  used to find `/api/auth/jwks` for JWT verification AND server-side Better Auth sign-up.
+- **No `AUTH_SECRET` on wamy-server** — tokens are verified with Better Auth's public JWKS keys.
 - `PORT=5000` is for **local only**; Vercel serverless ignores it (`isVercel` skips `app.listen`).
 
 **Client Vercel project env (exact names):**
@@ -262,8 +278,10 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   base URL; otherwise same-origin `/api/auth` is used.
 - `DB_URI` — MongoDB URI for the Better Auth route handler (`src/lib/auth.ts`).
 - `DB_NAME` — `WamyDorm`.
-- `BETTER_AUTH_SECRET` — same secret value used by Better Auth.
-- `BETTER_AUTH_URL` (optional) — deployed client URL for server-side Better Auth callbacks.
+- `BETTER_AUTH_SECRET` — secret used by Better Auth **on the client project only** (JWT signing keys
+  are generated/stored in MongoDB by the JWT plugin).
+- `BETTER_AUTH_URL` — deployed client URL; becomes JWT `iss`/`aud` and Better Auth `baseURL`
+  (must match `CLIENT_URL` on wamy-server).
 Never commit real values. Always **Redeploy** after any Vercel env change.
 
 ### Deployment diagnostics (added)
@@ -272,12 +290,15 @@ Never commit real values. Always **Redeploy** after any Vercel env change.
   `http://localhost:5000`; network failures now report the resolved base URL.
 - Server `config.js` exposes `logConfigDiagnostics()` (called at startup) printing environment,
   DB name, allowed CORS origins and client auth URL, plus explicit `console.error` warnings for
-  missing `DB_URI`, empty production CORS origins, localhost client auth URL in production, and
-  the default `AUTH_SECRET`. No secrets are logged.
+  missing `DB_URI`, empty production CORS origins, and localhost client auth URL in production.
+  Logs the resolved JWKS endpoint and confirms AUTH_SECRET is unused on the server. No secrets logged.
 - Server CORS accepts `CLIENT_ORIGIN`, `CLIENT_URL`, `NEXT_PUBLIC_BETTER_AUTH_URL`, `BETTER_AUTH_URL`;
   dev-only localhost origins are omitted in production. Blocked origins are logged with a hint.
-- `auth.ts` sets `baseURL`/`trustedOrigins` from the deployed URL env vars and logs a clear error
-  when `DB_URI` is missing; `auth-client.ts` uses only the public URL.
+- `auth.ts` sets `baseURL`/`trustedOrigins` and JWT plugin `issuer`/`audience`; `auth-client.ts`
+  uses only the public URL plus `jwtClient()`.
+- JWT flow (verified locally): `/api/auth/jwks` → 200 with keys; Better Auth sign-in → 200 with
+  cookie; `/api/auth/token` → 200 with JWT; Express `/api/auth/me` with that JWT → 200 (manager);
+  bogus token → 401; missing token → 401.
 
 ---
 
@@ -344,5 +365,15 @@ Never commit real values. Always **Redeploy** after any Vercel env change.
 - Keep `DB_NAME` identical in both `.env` files; never reintroduce a plural `users` helper.
 - If opening the client from a LAN IP / other hostname, add that exact origin to `CLIENT_ORIGIN`
   on the server and set `NEXT_PUBLIC_API_URL` to the reachable API host.
-- Optional: move Express auth fully onto Better Auth sessions; current bearer token is isolated in
-  `utils/token.js` so this can be swapped without route changes.
+- Keep `CLIENT_URL` on wamy-server and `BETTER_AUTH_URL` on wamy-client set to the SAME client URL
+  so JWT `iss`/`aud` and the JWKS URL match. Never add an `AUTH_SECRET` to wamy-server.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

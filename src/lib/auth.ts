@@ -1,4 +1,5 @@
 import { betterAuth } from "better-auth";
+import { jwt } from "better-auth/plugins";
 import { MongoClient } from "mongodb";
 import { mongodbAdapter } from "@better-auth/mongo-adapter";
 
@@ -14,7 +15,6 @@ if (!dbUri) {
   );
 }
 
-// The URI is only used on the server (Better Auth route handler / seed flow).
 const client = new MongoClient(
   dbUri || (isProduction ? "mongodb://127.0.0.1:27017/wamy-misconfigured" : "mongodb://localhost:27017/wamy-dev"),
 );
@@ -25,8 +25,10 @@ const configuredBaseUrl =
   process.env.NEXT_PUBLIC_BETTER_AUTH_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
 
+const baseURL = configuredBaseUrl?.replace(/\/$/, "");
+
 const trustedOrigins = [
-  configuredBaseUrl,
+  baseURL,
   process.env.CLIENT_ORIGIN,
   process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
 ]
@@ -35,11 +37,22 @@ const trustedOrigins = [
   .filter(Boolean);
 
 export const auth = betterAuth({
-  baseURL: configuredBaseUrl?.replace(/\/$/, ""),
+  baseURL,
   trustedOrigins,
   emailAndPassword: {
     enabled: true,
   },
+  plugins: [
+    // Exposes GET /api/auth/token (JWT for Express) and GET /api/auth/jwks
+    // (public keys for wamy-server's jose verification).
+    jwt({
+      jwt: {
+        issuer: baseURL,
+        audience: baseURL,
+        expirationTime: "1h",
+      },
+    }),
+  ],
   database: mongodbAdapter(db, {
     client,
   }),

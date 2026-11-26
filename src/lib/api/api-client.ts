@@ -1,3 +1,4 @@
+import { fetchAuthJwt, jwtExpiry } from "@/lib/auth-client";
 import type { ScoreTransaction } from "@/lib/types/scores";
 import type { StudentFullDetailsBundle } from "@/lib/types/studentDetails";
 import type { IUser } from "@/lib/types/users";
@@ -90,6 +91,22 @@ export function clearToken(): void {
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
+/**
+ * Return a valid Better Auth JWT for wamy-server, refreshing from
+ * GET /api/auth/token when the cached token is missing or near expiry.
+ */
+export async function getBearerToken(): Promise<string | null> {
+  const cached = getToken();
+  const expiresAt = jwtExpiry(cached);
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
+  if (cached && expiresAt && expiresAt > nowSeconds + 30) return cached;
+
+  const fresh = await fetchAuthJwt();
+  if (fresh) setToken(fresh);
+  return fresh ?? cached;
+}
+
 /** Simple fetch wrapper that attaches the bearer token and unwraps API errors. */
 export async function apiFetch<T>(
   path: string,
@@ -97,7 +114,11 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const baseUrl = getApiBaseUrl();
   const url = `${baseUrl}${path}`;
-  const token = getToken();
+  const token = await getBearerToken();
+
+  if (!token) {
+    throw new ApiError("لا توجد جلسة نشطة. سجّل الدخول ثم حاول مرة أخرى.", 401);
+  }
 
   let response: Response;
   try {

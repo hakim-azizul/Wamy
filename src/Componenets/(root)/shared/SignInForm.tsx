@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { apiFetch, setToken, type AuthResponse } from "@/lib/api/api-client";
+import { authClient, fetchAuthJwt } from "@/lib/auth-client";
+import { setToken } from "@/lib/api/api-client";
 
 export default function SignInForm() {
   const router = useRouter();
@@ -17,18 +18,27 @@ export default function SignInForm() {
     setSubmitting(true);
 
     try {
-      const data = await apiFetch<AuthResponse>("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
+      // Sign in through Better Auth (sets the session cookie on the client origin).
+      const result = await authClient.signIn.email({
+        email: email.trim().toLowerCase(),
+        password,
       });
-      setToken(data.token);
+
+      if (result.error) {
+        setError(result.error.message || "Invalid email or password.");
+        return;
+      }
+
+      // Exchange the session for a signed JWT that wamy-server verifies via JWKS.
+      const token = await fetchAuthJwt();
+      if (!token) {
+        setError("تعذر الحصول على رمز الدخول. تأكد من تفعيل JWT في Better Auth ثم حاول مرة أخرى.");
+        return;
+      }
+      setToken(token);
       router.push("/dashboard");
     } catch (err) {
-      if (err instanceof TypeError) {
-        setError("تعذر الاتصال بالخادم. تأكد من تشغيل wamy-server على المنفذ 5000 ثم حاول مرة أخرى.");
-      } else {
-        setError(err instanceof Error ? err.message : "تعذر تسجيل الدخول. حاول مرة أخرى.");
-      }
+      setError(err instanceof Error ? err.message : "تعذر تسجيل الدخول. حاول مرة أخرى.");
     } finally {
       setSubmitting(false);
     }
