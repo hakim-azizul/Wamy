@@ -1,16 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Trash2 } from "lucide-react";
-import {
-  apiFetch,
-  type StudentDetailsBundleResponse,
-} from "@/lib/api/api-client";
+import { apiFetch, type StudentDetailsBundleResponse } from "@/lib/api/api-client";
 import { canDeleteUser } from "@/lib/deletePermissions";
 import type { IUser } from "@/lib/types/users";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import { useDashboardUser } from "./DashboardShell";
-import StudentDetailsViewer from "./StudentDetailsViewer";
 import { useUserDeletion } from "./useUserDeletion";
 
 export default function StudentDirectory({
@@ -23,21 +20,10 @@ export default function StudentDirectory({
   onDeleted?: (id: string) => void;
 }) {
   const actor = useDashboardUser();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [bundle, setBundle] = useState<StudentDetailsBundleResponse | null>(null);
   const [completion, setCompletion] = useState<Record<string, number>>({});
   const [error, setError] = useState("");
 
-  const removeRow = useCallback(
-    (id: string) => {
-      onDeleted?.(id);
-      if (selectedId === id) {
-        setSelectedId(null);
-        setBundle(null);
-      }
-    },
-    [onDeleted, selectedId],
-  );
+  const removeRow = useCallback((id: string) => onDeleted?.(id), [onDeleted]);
   const deletion = useUserDeletion(removeRow);
 
   useEffect(() => {
@@ -65,20 +51,6 @@ export default function StudentDirectory({
       active = false;
     };
   }, [students, showCompletion]);
-
-  async function inspect(userId: string) {
-    setError("");
-    setSelectedId(userId);
-    setBundle(null);
-    try {
-      const data = await apiFetch<StudentDetailsBundleResponse>(
-        `/api/student-details/${userId}`,
-      );
-      setBundle(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "تعذر تحميل ملف الطالب.");
-    }
-  }
 
   return (
     <div className="space-y-6">
@@ -121,13 +93,12 @@ export default function StudentDirectory({
                   )}
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void inspect(student._id)}
-                        className="cursor-pointer rounded-lg border border-[#1E4831]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#1E4831] transition-colors hover:border-[#DE2F2C] hover:text-[#DE2F2C]"
+                      <Link
+                        href={`/dashboard/students/${student._id}`}
+                        className="inline-flex items-center rounded-lg border border-[#1E4831]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#1E4831] transition-colors hover:border-[#DE2F2C] hover:text-[#DE2F2C]"
                       >
                         عرض الملف
-                      </button>
+                      </Link>
                       {canDeleteUser(actor?.role, student) && (
                         <button
                           type="button"
@@ -152,27 +123,6 @@ export default function StudentDirectory({
         <p role="alert" className="rounded-xl border border-[#DE2F2C]/25 bg-[#FDE8E7] px-4 py-3 text-sm text-[#931815]">
           {error}
         </p>
-      )}
-
-      {selectedId && bundle && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-extrabold text-[#1E4831]">
-              ملف الطالب: {students.find((student) => student._id === selectedId)?.name}
-            </h2>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedId(null);
-                setBundle(null);
-              }}
-              className="cursor-pointer rounded-lg border border-[#D5C9AE] bg-white px-3 py-1.5 text-xs font-bold text-[#657F71] hover:text-[#DE2F2C]"
-            >
-              إغلاق
-            </button>
-          </div>
-          <StudentDetailsViewer bundle={bundle} />
-        </div>
       )}
 
       <ConfirmDeleteModal

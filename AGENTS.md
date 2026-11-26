@@ -30,9 +30,9 @@ native MongoDB driver). Keep it updated after every milestone. Do NOT create `wa
 ### Roles & permissions (3 roles)
 | Role | May create | May view / edit | May delete |
 |---|---|---|---|
-| `manager` | only `supervisor` | all users; any student's 5-section bundle; student `score` | `supervisor` + `student` (never manager/self) |
-| `supervisor` | only `student` (lightweight) | only students; any student's bundle | `student` only (never supervisor/manager/self) |
-| `student` | nothing | only own account + own 5-section bundle; upserts own sections | nobody (403) |
+| `manager` | only `supervisor` | all users; any student's 5-section bundle/CV; student `score`; PATCH any student detail | `supervisor` + `student` (never manager/self) |
+| `supervisor` | only `student` (lightweight) | only students; any student's bundle/CV; PATCH any student detail | `student` only (never supervisor/manager/self) |
+| `student` | nothing | only own account + own 5-section bundle; upserts own sections via PUT | nobody (403) |
 
 `status` is `active | suspended` (default `active`); `createdBy` is the creator's **name**.
 `score?`, `roomNumber?`, `flatNumber?` exist ONLY on student docs. Never require, send, validate,
@@ -44,6 +44,16 @@ Public sign-up UI is OFF.
 success it deletes the Better Auth `user` document, all `account` and `session` records with that
 `userId`, and — when the target was a student — all documents in the 5 modular student collections
 with that `userId`. Client delete buttons call this endpoint ONLY after an RTL confirmation modal.
+
+### Student CV page & office edits
+- `عرض الملف` on student rows now **navigates** to `/dashboard/students/[userId]` (shared route for
+  manager + supervisor), which renders the full CV/profile sheet: read-only `user` fields plus all
+  5 modular detail sections via `StudentDetailsViewer`. The old inline viewer/modal was removed.
+- `DashboardShell` role guard allows the shared `/dashboard/students/...` segment for office roles;
+  students are redirected to `/dashboard`.
+- Office roles can click `تعديل` on the CV page to open an RTL `StudentEditModal`: choose a detail
+  category, edit pre-filled fields (read-only user fields stay non-editable), then PATCH. On success
+  the CV updates in place and the modal closes.
 
 ### Student room / flat ownership
 - The supervisor assigns `roomNumber` and `flatNumber` when creating a student account; they are
@@ -78,13 +88,19 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   `account` + `session` + (for students) all 5 detail collections by `userId`.
 - `routes/auth.js` — login verifies via `better-auth/crypto` `verifyPassword()` against
   `account.password`; issues the existing isolated HMAC bearer token.
-- `middleware.js` — `verifyUser`, `isManager`, `isSupervisor`, `isStudent`.
+- `middleware.js` — `verifyUser`, `isManager`, `isSupervisor`, `isStudent`,
+  `isManagerOrSupervisor` (office-only guard for CV PATCH).
 - `routes/users.js` — `POST /students` validates required `roomNumber`/`flatNumber`;
   `PATCH /:id/score` rejects non-student targets with 400; **`DELETE /:id`** enforces the deletion
   RBAC (self-delete 403, student actor 403, missing 404, disallowed role 403) then cascades.
-- `routes/studentDetails.js`, `services/studentDetails.js` (bundle includes canonical `user`
-  fields), `utils/validation.js`, `utils/studentDetailsValidation.js` (personal section no longer
-  accepts flatNo/roomNo), `utils/token.js`.
+- `routes/studentDetails.js` — adds **`PATCH /:userId/details`** (`verifyUser` +
+  `isManagerOrSupervisor`, 404 missing student, returns updated bundle + section).
+- `services/studentDetails.js` — bundle includes canonical `user` fields; adds
+  `patchStudentSection()` (partial `$set`, `null` clears, untouched fields preserved, upsert-safe).
+- `utils/studentDetailsValidation.js` — adds `validatePartialSection()` (only supplied keys
+  validated; rejects unknown keys and canonical user fields email/name/roomNumber/flatNumber).
+- `utils/validation.js`, `utils/token.js`.
+- `index.js` — cleaned up config import ordering (no behavior change).
 - `seed-manager.mjs` — drops any legacy `users` collection, creates the manager through Better
   Auth's native sign-up if missing, sets `role: "manager"`/`status: "active"` on the `user` doc,
   verifies credentials with Better Auth, and reports success.
@@ -133,8 +149,17 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   `role === "student"` rows; Delete action column shown via `actorRole`/`onRequestDelete` and
   gated by `canDeleteUser` (manager never sees Delete on manager rows).
 - `manager/SupervisorsView.tsx` — Delete action on supervisor rows with confirmation modal.
-- `shared/StudentDirectory.tsx` — Delete action on student rows for manager/supervisor with the
-  same modal; used by `manager/StudentsView.tsx` and `supervisor/StudentsView.tsx`.
+- `shared/StudentDirectory.tsx` — `عرض الملف` is now a `Link` to `/dashboard/students/<id>`;
+  Delete action retained for manager/supervisor with the same modal; used by
+  `manager/StudentsView.tsx` and `supervisor/StudentsView.tsx`.
+- `shared/StudentCvPage.tsx` — **created**: client CV page fetching `GET /api/student-details/:id`,
+  header with student name/email, completion, `تعديل` button (office roles only), error/loading.
+- `shared/StudentEditModal.tsx` — **created**: RTL modal with category selector for the 5 sections,
+  pre-filled fields per selected category, read-only canonical user fields, PATCH submit, busy/error
+  states, closes and refreshes CV on success.
+- `src/app/(dashboard)/dashboard/students/[userId]/page.tsx` — **created**: dedicated CV route.
+- `shared/DashboardShell.tsx` — role guard updated to permit `/dashboard/students/...` for manager
+  and supervisor only.
 - `(root)/shared/Navbar.tsx` + `Footer.tsx` — when authenticated the "دخول الأعضاء" CTA becomes
   a "لوحة التحكم" button linking to `/dashboard`; logged-out state unchanged.
 - `src/app/(dashboard)/dashboard/student/profile/page.tsx` — wraps `ProfileForm` in `Suspense`
@@ -167,6 +192,7 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 | GET | `/api/student-details/me` | student | own 5-section bundle + completionSummary + read-only `user` fields |
 | GET | `/api/student-details/:userId` | manager/supervisor (student: self only) | any student's bundle + read-only `user` fields |
 | PUT | `/api/student-details/:section` | student | upsert own section |
+| PATCH | `/api/student-details/:userId/details` | manager / supervisor | partial edit `{ section, fields }`; `null` clears, omitted keys preserved; canonical user fields rejected; returns bundle + section |
 
 ---
 
@@ -225,6 +251,10 @@ Never commit real values.
   manager→supervisor 200, manager→student 200, supervisor→self 403, supervisor→manager 403,
   supervisor→supervisor 403, supervisor→student 200, student→manager 403. Cascade verified:
   deleted student's `student_personal_info` and `account` counts both 0. Test accounts removed.
+- CV/PATCH milestone: `node --check` all server files; server restart healthy; `npx tsc --noEmit`;
+  `npm run build` pass (route list now includes `ƒ /dashboard/students/[userId]`). Live PATCH test:
+  manager partial edit → 200 with changed field `بعد التعديل`, cleared field `null`, bundle returned;
+  protected `email` field → 400; unknown field → 400; original values restored afterwards.
 
 ## 7. Next steps
 - Run both servers: `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.
