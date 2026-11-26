@@ -27,7 +27,12 @@ export default function ManagerStudentsView() {
 
       {error && <FormMessage text={error} tone="error" />}
 
-      <StudentDirectory students={students} />
+      <StudentDirectory
+        students={students}
+        onDeleted={(id: string) => {
+          setStudents((current) => current.filter((student) => student._id !== id));
+        }}
+      />
     </div>
   );
 }

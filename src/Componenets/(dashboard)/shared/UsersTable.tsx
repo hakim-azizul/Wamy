@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
+import { canDeleteUser } from "@/lib/deletePermissions";
 import {
   ROLE_BADGE_CLASSES,
   ROLE_LABELS,
@@ -15,13 +17,19 @@ export default function UsersTable({
   showScore = false,
   showCreatedBy = false,
   onScoreChange,
+  actorRole,
+  onRequestDelete,
 }: {
   users: IUser[];
   showScore?: boolean;
   showCreatedBy?: boolean;
   onScoreChange?: (userId: string, score: number) => void;
+  actorRole?: IUser["role"];
+  onRequestDelete?: (user: IUser) => void;
 }) {
-  const columnCount = 6 + (showScore ? 1 : 0) + (showCreatedBy ? 1 : 0);
+  const showDelete = Boolean(actorRole && onRequestDelete);
+  const columnCount =
+    6 + (showScore ? 1 : 0) + (showCreatedBy ? 1 : 0) + (showDelete ? 1 : 0);
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC]">
@@ -36,6 +44,7 @@ export default function UsersTable({
             <th className="px-4 py-3 font-bold">الهاتف</th>
             {showScore && <th className="px-4 py-3 font-bold">الدرجة</th>}
             <th className="px-4 py-3 font-bold">تاريخ الإنشاء</th>
+            {showDelete && <th className="px-4 py-3 font-bold">إجراء</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-[#D5C9AE]/70">
@@ -80,6 +89,22 @@ export default function UsersTable({
                   </td>
                 )}
                 <td className="px-4 py-3 text-[#657F71]">{formatDate(user.createdAt)}</td>
+                {showDelete && (
+                  <td className="px-4 py-3">
+                    {canDeleteUser(actorRole, user) ? (
+                      <button
+                        type="button"
+                        onClick={() => onRequestDelete?.(user)}
+                        title="حذف الحساب"
+                        className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-2 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    ) : (
+                      <span className="text-[#657F71]">—</span>
+                    )}
+                  </td>
+                )}
               </tr>
             ))
           )}

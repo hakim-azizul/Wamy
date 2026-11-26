@@ -28,16 +28,22 @@ native MongoDB driver). Keep it updated after every milestone. Do NOT create `wa
   (`score`, `roomNumber`, `flatNumber`) are attached ONLY when `role === "student"`.
 
 ### Roles & permissions (3 roles)
-| Role | May create | May view / edit |
-|---|---|---|
-| `manager` | only `supervisor` | all users; any student's 5-section bundle; student `score` |
-| `supervisor` | only `student` (lightweight) | only students; any student's bundle |
-| `student` | nothing | only own account + own 5-section bundle; upserts own sections |
+| Role | May create | May view / edit | May delete |
+|---|---|---|---|
+| `manager` | only `supervisor` | all users; any student's 5-section bundle; student `score` | `supervisor` + `student` (never manager/self) |
+| `supervisor` | only `student` (lightweight) | only students; any student's bundle | `student` only (never supervisor/manager/self) |
+| `student` | nothing | only own account + own 5-section bundle; upserts own sections | nobody (403) |
 
 `status` is `active | suspended` (default `active`); `createdBy` is the creator's **name**.
 `score?`, `roomNumber?`, `flatNumber?` exist ONLY on student docs. Never require, send, validate,
 or attach a score/room/flat for `manager` or `supervisor` anywhere (client or server).
 Public sign-up UI is OFF.
+
+### Cascading user deletion
+`DELETE /api/users/:id` enforces the RBAC matrix above (403 forbidden, 404 missing target). On
+success it deletes the Better Auth `user` document, all `account` and `session` records with that
+`userId`, and — when the target was a student — all documents in the 5 modular student collections
+with that `userId`. Client delete buttons call this endpoint ONLY after an RTL confirmation modal.
 
 ### Student room / flat ownership
 - The supervisor assigns `roomNumber` and `flatNumber` when creating a student account; they are
@@ -63,17 +69,19 @@ Public sign-up UI is OFF.
   plus comma-separated `CLIENT_ORIGIN`), `clientAuthUrl` (`CLIENT_URL` /
   `NEXT_PUBLIC_BETTER_AUTH_URL`, default `http://localhost:3000`).
 - `db.js` — `connectToMongoDB()`, `getDb()`, **`userCollection()` (`"user"`)**,
-  **`accountCollection()` (`"account"`)**, `STUDENT_DETAIL_COLLECTIONS`, `SECTION_KEYS`,
-  `studentDetailsCollection()`, `ensureIndexes()` (student detail `userId` indexes only),
-  `closeMongoDB()`.
+  **`accountCollection()` (`"account"`)**, **`sessionCollection()` (`"session"`)**,
+  `STUDENT_DETAIL_COLLECTIONS`, `SECTION_KEYS`, `studentDetailsCollection()`,
+  `ensureIndexes()` (student detail `userId` indexes only), `closeMongoDB()`.
 - `services/users.js` — reads `user`/`account`; `findCredentialByUserId()`; `createUser()` calls
   Better Auth sign-up then patches app fields; attaches `score`/`roomNumber`/`flatNumber` ONLY for
-  students; `listUsers()`, `updateStudentScore()` (also guarded by role in the route).
+  students; `listUsers()`, `updateStudentScore()`; **`deleteUserCascade()`** removes `user` +
+  `account` + `session` + (for students) all 5 detail collections by `userId`.
 - `routes/auth.js` — login verifies via `better-auth/crypto` `verifyPassword()` against
   `account.password`; issues the existing isolated HMAC bearer token.
 - `middleware.js` — `verifyUser`, `isManager`, `isSupervisor`, `isStudent`.
 - `routes/users.js` — `POST /students` validates required `roomNumber`/`flatNumber`;
-  `PATCH /:id/score` rejects non-student targets with 400.
+  `PATCH /:id/score` rejects non-student targets with 400; **`DELETE /:id`** enforces the deletion
+  RBAC (self-delete 403, student actor 403, missing 404, disallowed role 403) then cascades.
 - `routes/studentDetails.js`, `services/studentDetails.js` (bundle includes canonical `user`
   fields), `utils/validation.js`, `utils/studentDetailsValidation.js` (personal section no longer
   accepts flatNo/roomNo), `utils/token.js`.
@@ -98,6 +106,13 @@ Public sign-up UI is OFF.
 - `src/lib/studentDetailsMeta.ts` — removed editable flat/room fields from the personal section.
 - `src/lib/useAuthStatus.ts` — **created**: lightweight navbar/footer auth state via the stored
   token and `GET /api/auth/me` (exposes `checking`, `isAuthenticated`, `role`).
+- `src/lib/deletePermissions.ts` — **created**: `canDeleteUser(actorRole, target)` mirrors server
+  deletion RBAC so buttons appear only for authorized rows.
+- `shared/ConfirmDeleteModal.tsx` — **created**: RTL confirmation dialog (name/email/role,
+  "تأكيد الحذف" + "إلغاء", busy/disabled state, inline error, Escape-to-cancel). No API call on
+  button click — only after Confirm.
+- `shared/useUserDeletion.ts` — **created**: shared modal state + confirmed `DELETE` call + error
+  feedback + removal callback.
 - `src/lib/labels.ts`, `src/lib/format.ts`.
 - `src/lib/dashboardNav.ts` — single source of truth for the role -> route map (icons from
   `lucide-react`), including the five student detail sections as query-param deep links.
@@ -115,7 +130,11 @@ Public sign-up UI is OFF.
 - `supervisor/CreateStudentForm.tsx` — required Room Number + Flat Number inputs; sends
   `roomNumber`/`flatNumber` in the student creation payload; no score input.
 - `manager/UsersView.tsx` + `shared/UsersTable.tsx` — score editor only rendered/allowed for
-  `role === "student"` rows.
+  `role === "student"` rows; Delete action column shown via `actorRole`/`onRequestDelete` and
+  gated by `canDeleteUser` (manager never sees Delete on manager rows).
+- `manager/SupervisorsView.tsx` — Delete action on supervisor rows with confirmation modal.
+- `shared/StudentDirectory.tsx` — Delete action on student rows for manager/supervisor with the
+  same modal; used by `manager/StudentsView.tsx` and `supervisor/StudentsView.tsx`.
 - `(root)/shared/Navbar.tsx` + `Footer.tsx` — when authenticated the "دخول الأعضاء" CTA becomes
   a "لوحة التحكم" button linking to `/dashboard`; logged-out state unchanged.
 - `src/app/(dashboard)/dashboard/student/profile/page.tsx` — wraps `ProfileForm` in `Suspense`
@@ -144,6 +163,7 @@ Public sign-up UI is OFF.
 | POST | `/api/users/students` | supervisor | native sign-up + student-only patch (`score`, `roomNumber`, `flatNumber`, createdBy) |
 | GET | `/api/users` | auth | manager → all, supervisor → students, student → self |
 | PATCH | `/api/users/:id/score` | manager | edit student top-level `score`; 400 for non-student targets |
+| DELETE | `/api/users/:id` | manager / supervisor (RBAC matrix) | cascading delete: user + account + session + student details |
 | GET | `/api/student-details/me` | student | own 5-section bundle + completionSummary + read-only `user` fields |
 | GET | `/api/student-details/:userId` | manager/supervisor (student: self only) | any student's bundle + read-only `user` fields |
 | PUT | `/api/student-details/:section` | student | upsert own section |
@@ -197,9 +217,14 @@ Never commit real values.
   `npx tsc --noEmit` and `npm run build` still pass.
 - Sidebar milestone: `npx tsc --noEmit` and `npm run build` pass; all 11 routes still generated
   (no new routes — the five student sections are deep links into `/dashboard/student/profile`).
-- This milestone: server syntax check + clean restart pass; login returns a manager with NO score
+- Previous milestone: server syntax check + clean restart pass; login returns a manager with NO score
   field; `PATCH /api/users/<manager-id>/score` → 400 "Score applies only to student accounts.";
   `GET /api/users` works; `npx tsc --noEmit` and `npm run build` pass.
+- Delete milestone: `node --check` all server files; `npx tsc --noEmit`; `npm run build` pass.
+  Live RBAC verification (all matched expectations): manager→self 403, manager→missing 404,
+  manager→supervisor 200, manager→student 200, supervisor→self 403, supervisor→manager 403,
+  supervisor→supervisor 403, supervisor→student 200, student→manager 403. Cascade verified:
+  deleted student's `student_personal_info` and `account` counts both 0. Test accounts removed.
 
 ## 7. Next steps
 - Run both servers: `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.

@@ -36,7 +36,13 @@ export default function SupervisorStudentsView() {
 
       {error && <FormMessage text={error} tone="error" />}
 
-      <StudentDirectory students={students} showCompletion />
+      <StudentDirectory
+        students={students}
+        showCompletion
+        onDeleted={(id: string) => {
+          setStudents((current) => current.filter((student) => student._id !== id));
+        }}
+      />
     </div>
   );
 }

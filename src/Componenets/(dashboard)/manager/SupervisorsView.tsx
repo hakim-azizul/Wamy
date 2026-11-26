@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { Trash2 } from "lucide-react";
 import {
   apiFetch,
   type UserResponse,
@@ -9,15 +10,26 @@ import {
 import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/labels";
 import type { IUser } from "@/lib/types/users";
 import { FormMessage, TextField } from "../shared/FormFields";
+import ConfirmDeleteModal from "../shared/ConfirmDeleteModal";
+import { useDashboardUser } from "../shared/DashboardShell";
+import { canDeleteUser } from "@/lib/deletePermissions";
+import { useUserDeletion } from "../shared/useUserDeletion";
 
 const EMPTY_FORM = { name: "", email: "", password: "", phone: "" };
 
 export default function SupervisorsView() {
+  const actor = useDashboardUser();
   const [supervisors, setSupervisors] = useState<IUser[]>([]);
   const [form, setForm] = useState(EMPTY_FORM);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const removeRow = useCallback((id: string) => {
+    setSupervisors((current) => current.filter((supervisor) => supervisor._id !== id));
+    setSuccess("تم حذف المشرف وجميع السجلات المرتبطة به.");
+  }, []);
+  const deletion = useUserDeletion(removeRow);
 
   const load = useCallback(async () => {
     try {
@@ -131,12 +143,13 @@ export default function SupervisorsView() {
                 <th className="px-4 py-3 font-bold">البريد</th>
                 <th className="px-4 py-3 font-bold">الهاتف</th>
                 <th className="px-4 py-3 font-bold">الحالة</th>
+                <th className="px-4 py-3 font-bold">إجراء</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#D5C9AE]/70">
               {supervisors.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-[#657F71]">لا يوجد مشرفون بعد.</td>
+                  <td colSpan={5} className="px-4 py-8 text-center text-[#657F71]">لا يوجد مشرفون بعد.</td>
                 </tr>
               ) : (
                 supervisors.map((supervisor) => (
@@ -149,6 +162,21 @@ export default function SupervisorsView() {
                         {STATUS_LABELS[supervisor.status]}
                       </span>
                     </td>
+                    <td className="px-4 py-3">
+                      {canDeleteUser(actor?.role, supervisor) ? (
+                        <button
+                          type="button"
+                          onClick={() => deletion.open(supervisor)}
+                          title="حذف المشرف"
+                          aria-label={`حذف ${supervisor.name}`}
+                          className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-2 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <span className="text-[#657F71]">—</span>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -156,6 +184,14 @@ export default function SupervisorsView() {
           </table>
         </div>
       </section>
+
+      <ConfirmDeleteModal
+        user={deletion.target}
+        busy={deletion.busy}
+        error={deletion.error}
+        onCancel={deletion.cancel}
+        onConfirm={() => void deletion.confirm()}
+      />
     </div>
   );
 }

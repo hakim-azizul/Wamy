@@ -7,13 +7,23 @@ import {
   type UsersResponse,
 } from "@/lib/api/api-client";
 import type { IUser } from "@/lib/types/users";
+import { useDashboardUser } from "../shared/DashboardShell";
+import ConfirmDeleteModal from "../shared/ConfirmDeleteModal";
 import { FormMessage } from "../shared/FormFields";
 import UsersTable from "../shared/UsersTable";
+import { useUserDeletion } from "../shared/useUserDeletion";
 
 export default function UsersView() {
+  const actor = useDashboardUser();
   const [users, setUsers] = useState<IUser[]>([]);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  const removeRow = useCallback((id: string) => {
+    setUsers((current) => current.filter((user) => user._id !== id));
+    setSuccess("تم حذف الحساب وجميع السجلات المرتبطة به.");
+  }, []);
+  const deletion = useUserDeletion(removeRow);
 
   const load = useCallback(async () => {
     try {
@@ -62,8 +72,18 @@ export default function UsersView() {
           showScore
           showCreatedBy
           onScoreChange={(userId, score) => void handleScoreChange(userId, score)}
+          actorRole={actor?.role}
+          onRequestDelete={deletion.open}
         />
       </section>
+
+      <ConfirmDeleteModal
+        user={deletion.target}
+        busy={deletion.busy}
+        error={deletion.error}
+        onCancel={deletion.cancel}
+        onConfirm={() => void deletion.confirm()}
+      />
     </div>
   );
 }

@@ -1,24 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { Trash2 } from "lucide-react";
 import {
   apiFetch,
   type StudentDetailsBundleResponse,
 } from "@/lib/api/api-client";
+import { canDeleteUser } from "@/lib/deletePermissions";
 import type { IUser } from "@/lib/types/users";
+import ConfirmDeleteModal from "./ConfirmDeleteModal";
+import { useDashboardUser } from "./DashboardShell";
 import StudentDetailsViewer from "./StudentDetailsViewer";
+import { useUserDeletion } from "./useUserDeletion";
 
 export default function StudentDirectory({
   students,
   showCompletion = false,
+  onDeleted,
 }: {
   students: IUser[];
   showCompletion?: boolean;
+  onDeleted?: (id: string) => void;
 }) {
+  const actor = useDashboardUser();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [bundle, setBundle] = useState<StudentDetailsBundleResponse | null>(null);
   const [completion, setCompletion] = useState<Record<string, number>>({});
   const [error, setError] = useState("");
+
+  const removeRow = useCallback(
+    (id: string) => {
+      onDeleted?.(id);
+      if (selectedId === id) {
+        setSelectedId(null);
+        setBundle(null);
+      }
+    },
+    [onDeleted, selectedId],
+  );
+  const deletion = useUserDeletion(removeRow);
 
   useEffect(() => {
     if (!showCompletion) return;
@@ -100,13 +120,26 @@ export default function StudentDirectory({
                     </td>
                   )}
                   <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => void inspect(student._id)}
-                      className="cursor-pointer rounded-lg border border-[#1E4831]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#1E4831] transition-colors hover:border-[#DE2F2C] hover:text-[#DE2F2C]"
-                    >
-                      عرض الملف
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void inspect(student._id)}
+                        className="cursor-pointer rounded-lg border border-[#1E4831]/20 bg-white px-3 py-1.5 text-xs font-bold text-[#1E4831] transition-colors hover:border-[#DE2F2C] hover:text-[#DE2F2C]"
+                      >
+                        عرض الملف
+                      </button>
+                      {canDeleteUser(actor?.role, student) && (
+                        <button
+                          type="button"
+                          onClick={() => deletion.open(student)}
+                          title="حذف الطالب"
+                          aria-label={`حذف ${student.name}`}
+                          className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-1.5 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))
@@ -141,6 +174,14 @@ export default function StudentDirectory({
           <StudentDetailsViewer bundle={bundle} />
         </div>
       )}
+
+      <ConfirmDeleteModal
+        user={deletion.target}
+        busy={deletion.busy}
+        error={deletion.error}
+        onCancel={deletion.cancel}
+        onConfirm={() => void deletion.confirm()}
+      />
     </div>
   );
 }
