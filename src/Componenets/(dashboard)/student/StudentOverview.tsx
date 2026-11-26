@@ -41,10 +41,14 @@ export default function StudentOverview() {
       )}
 
       <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-2xl border border-[#DE2F2C]/25 bg-linear-to-l from-[#FDE8E7] to-[#F9F5EC] p-6">
-          <p className="text-xs font-semibold text-[#931815]">درجة المراجعة</p>
+        <Link
+          href="/dashboard/student/scores"
+          className="rounded-2xl border border-[#DE2F2C]/25 bg-linear-to-l from-[#FDE8E7] to-[#F9F5EC] p-6 transition-colors hover:border-[#DE2F2C]"
+        >
+          <p className="text-xs font-semibold text-[#931815]">درجة المراجعة — نظام النقاط</p>
           <p className="mt-2 text-4xl font-extrabold text-[#DE2F2C]">{user.score ?? "—"}</p>
-        </div>
+          <p className="mt-2 text-[11px] font-bold text-[#931815]">عرض السجل وخارطة التقدم ←</p>
+        </Link>
         <div className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-6">
           <p className="text-xs font-semibold text-[#657F71]">الشقة / الغرفة</p>
           <p className="mt-2 text-2xl font-extrabold text-[#1E4831]" dir="ltr">

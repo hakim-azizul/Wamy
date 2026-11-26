@@ -30,9 +30,9 @@ native MongoDB driver). Keep it updated after every milestone. Do NOT create `wa
 ### Roles & permissions (3 roles)
 | Role | May create | May view / edit | May delete |
 |---|---|---|---|
-| `manager` | only `supervisor` | all users; any student's 5-section bundle/CV; student `score`; PATCH any student detail | `supervisor` + `student` (never manager/self) |
-| `supervisor` | only `student` (lightweight) | only students; any student's bundle/CV; PATCH any student detail | `student` only (never supervisor/manager/self) |
-| `student` | nothing | only own account + own 5-section bundle; upserts own sections via PUT | nobody (403) |
+| `manager` | only `supervisor` | all users; any student's CV; student `score`; PATCH any student detail; adjust scores; all score history | `supervisor` + `student` (never manager/self) |
+| `supervisor` | only `student` (lightweight) | only students; any student's CV; PATCH any student detail; adjust scores; all score history | `student` only (never supervisor/manager/self) |
+| `student` | nothing | only own account + own 5-section bundle (PUT); own score history only | nobody (403) |
 
 `status` is `active | suspended` (default `active`); `createdBy` is the creator's **name**.
 `score?`, `roomNumber?`, `flatNumber?` exist ONLY on student docs. Never require, send, validate,
@@ -63,6 +63,27 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   flatNumber }` fetched live from `userCollection()`; the student profile form and manager/
   supervisor detail viewers render email/room/flat as **read-only** fields.
 
+### نظام النقاط (score system)
+- Single collection **`score_transactions`**: `studentUserId`, `studentEmail`, `actorUserId`,
+  `actorEmail`, `actorName`, `actorRole`, `delta` (non-zero integer), `previousScore`, `newScore`,
+  `reason`, `violationSeverity`, `severityLabel`, `createdAt`. Index on
+  `{ studentUserId: 1, createdAt: -1 }`. Deleted with the student in `deleteUserCascade()`.
+- **Conditional severity rule:** `violationSeverity` (`simple`=بسيطة, `moderate`=متوسطة,
+  `severe`=جسيمة) is REQUIRED only when `delta < 0`; for increases it is stripped and stored as
+  `null` even if sent. Server rejects a decrease without a valid severity.
+- `POST /api/scores` (manager/supervisor) atomically `$inc`s the student's `score` on the `user`
+  document and inserts one transaction. `GET /api/scores` returns transactions newest-first:
+  office roles see all (filter `?studentUserId=`/`?studentEmail=`), students see only their own.
+- Client routes: `/dashboard/manager/scores`, `/dashboard/supervisor/scores` (student list with
+  sorting + score adjustment form + history), `/dashboard/student/scores` (balance, bank-style
+  history, roadmap). Students cannot adjust scores in the UI.
+- Student CV page tabs: `التفاصيل` (profile + Edit modal) and `نظام النقاط` (score, adjust form,
+  history, roadmap).
+- Color coding: increases=soft green; decreases `بسيطة`=amber/yellow, `متوسطة`=warm orange,
+  `جسيمة`=soft red; severity badge shown on decreases only.
+- Roadmap ladder: نجم السكن 200+ / قائد 150–200 / نشيط 100–150 / مبتدئ 100 / كسول 70–100 /
+  سيئ 60–70 / تعويض +50 / خطأ جسيم 40–50 / خارج السكن <40; shows points remaining to 150 and 200.
+
 ### Five modular student detail collections (unique `userId` index each)
 `student_personal_info` (`personal`), `student_academic_info` (`academic`),
 `student_skills_talents` (`skills`), `student_achievements` (`achievements`),
@@ -89,7 +110,16 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `routes/auth.js` — login verifies via `better-auth/crypto` `verifyPassword()` against
   `account.password`; issues the existing isolated HMAC bearer token.
 - `middleware.js` — `verifyUser`, `isManager`, `isSupervisor`, `isStudent`,
-  `isManagerOrSupervisor` (office-only guard for CV PATCH).
+  `isManagerOrSupervisor` (office-only guard for CV PATCH and score changes).
+- `db.js` — adds `scoreTransactionsCollection()` + `{studentUserId, createdAt}` index.
+- `utils/scoreValidation.js` — **created**: `validateScoreChange()` (non-zero integer delta,
+  required reason, conditional severity, strip on increase), `buildTransactionFilter()`,
+  `VIOLATION_SEVERITIES`/labels.
+- `services/scores.js` — **created**: atomic `adjustStudentScore()` ($inc + insert transaction),
+  `listScoreTransactions()` (newest-first), `deleteScoreTransactionsForStudent()`.
+- `routes/scores.js` — **created**: `POST /api/scores` + `GET /api/scores` (role-scoped).
+- `index.js` — mounts `/api/scores`.
+- `services/users.js` — cascade deletion now also removes the student's score transactions.
 - `routes/users.js` — `POST /students` validates required `roomNumber`/`flatNumber`;
   `PATCH /:id/score` rejects non-student targets with 400; **`DELETE /:id`** enforces the deletion
   RBAC (self-delete 403, student actor 403, missing 404, disallowed role 403) then cascades.
@@ -117,6 +147,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   (default `http://localhost:5000`); `SignInForm` calls Express `/api/auth/login` (custom route),
   stores the bearer token, and shows a clear "server not reachable" hint on network errors.
 - `src/lib/types/users.ts` — added student-only `roomNumber?`/`flatNumber?`.
+- `src/lib/types/scores.ts` — **created**: `ScoreTransaction`, `ViolationSeverity`.
+- `src/lib/scoreSystem.ts` — **created**: severity labels/options, color tone helpers,
+  `SCORE_LADDER`, `currentStatus()`, `pointsToNextMilestone()`.
 - `src/lib/types/studentDetails.ts` — removed `flatNo`/`roomNo` from personal info; added
   `StudentAccountFields` and `StudentFullDetailsBundle.user`.
 - `src/lib/studentDetailsMeta.ts` — removed editable flat/room fields from the personal section.
@@ -158,6 +191,16 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   pre-filled fields per selected category, read-only canonical user fields, PATCH submit, busy/error
   states, closes and refreshes CV on success.
 - `src/app/(dashboard)/dashboard/students/[userId]/page.tsx` — **created**: dedicated CV route.
+- Score components (`shared/`): `ScoreAdjustForm.tsx` (direction toggle, conditional severity
+  dropdown only for decreases), `ScoreHistory.tsx` (bank-style color-coded rows),
+  `ScoreRoadmap.tsx` (ladder + points to 150/200), `StudentScorePanel.tsx` (CV score tab),
+  `ScoreManagementView.tsx` (office list + sorting + adjustment).
+- `student/StudentScoreView.tsx` — **created**: student balance/history/roadmap page.
+- Routes: `dashboard/manager/scores/page.tsx`, `dashboard/supervisor/scores/page.tsx`,
+  `dashboard/student/scores/page.tsx`.
+- `lib/dashboardNav.ts` — `نظام النقاط` added for all three roles.
+- `StudentCvPage.tsx` — now has `التفاصيل` / `نظام النقاط` tabs with the score panel.
+- `student/StudentOverview.tsx` — score card links to `/dashboard/student/scores`.
 - `shared/DashboardShell.tsx` — role guard updated to permit `/dashboard/students/...` for manager
   and supervisor only.
 - `(root)/shared/Navbar.tsx` + `Footer.tsx` — when authenticated the "دخول الأعضاء" CTA becomes
@@ -193,6 +236,8 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 | GET | `/api/student-details/:userId` | manager/supervisor (student: self only) | any student's bundle + read-only `user` fields |
 | PUT | `/api/student-details/:section` | student | upsert own section |
 | PATCH | `/api/student-details/:userId/details` | manager / supervisor | partial edit `{ section, fields }`; `null` clears, omitted keys preserved; canonical user fields rejected; returns bundle + section |
+| POST | `/api/scores` | manager / supervisor | `{ studentUserId, delta, reason, violationSeverity? }`; atomic score update + transaction |
+| GET | `/api/scores` | all roles | newest-first transactions; office: all (filter by student id/email), student: own only |
 
 ---
 
@@ -255,6 +300,11 @@ Never commit real values.
   `npm run build` pass (route list now includes `ƒ /dashboard/students/[userId]`). Live PATCH test:
   manager partial edit → 200 with changed field `بعد التعديل`, cleared field `null`, bundle returned;
   protected `email` field → 400; unknown field → 400; original values restored afterwards.
+- Score milestone: `node --check` all server files; server restart healthy; `npx tsc --noEmit`;
+  `npm run build` pass (16 routes incl. manager/supervisor/student scores). Live API test: decrease
+  without severity → 400; invalid severity → 400; increase with severity sent → 201 and stored
+  severity `null`; decrease with `moderate` → 201 and stored correctly; score chain 100→110→107;
+  manager list → newest-first (`-3` first); score restored to 100 and test rows removed.
 
 ## 7. Next steps
 - Run both servers: `npm run dev` in `wamy-client` and `npm start` in `wamy-server`.

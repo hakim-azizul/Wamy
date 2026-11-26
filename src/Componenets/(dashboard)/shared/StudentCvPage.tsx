@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight, Pencil } from "lucide-react";
+import { ArrowRight, FileUser, Pencil, Trophy } from "lucide-react";
 import {
   apiFetch,
   type StudentDetailsBundleResponse,
@@ -12,6 +12,9 @@ import { ROLE_BADGE_CLASSES, ROLE_LABELS } from "@/lib/labels";
 import { useDashboardUser } from "./DashboardShell";
 import StudentDetailsViewer from "./StudentDetailsViewer";
 import StudentEditModal from "./StudentEditModal";
+import StudentScorePanel from "./StudentScorePanel";
+
+type CvTab = "details" | "scores";
 
 export default function StudentCvPage() {
   const params = useParams<{ userId: string }>();
@@ -20,6 +23,7 @@ export default function StudentCvPage() {
   const [bundle, setBundle] = useState<StudentDetailsBundleResponse | null>(null);
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(false);
+  const [tab, setTab] = useState<CvTab>("details");
 
   useEffect(() => {
     let active = true;
@@ -52,11 +56,11 @@ export default function StudentCvPage() {
             ملف الطالب الكامل
           </h1>
           <p className="text-sm text-[#3E5E4D]">
-            السيرة الذاتية الأكاديمية والشخصية موزّعة على خمسة أقسام.
+            التفاصيل الشخصية والأكاديمية ونظام النقاط في مكان واحد.
           </p>
         </div>
 
-        {canEdit && bundle && (
+        {canEdit && bundle && tab === "details" && (
           <button
             type="button"
             onClick={() => setEditing(true)}
@@ -87,6 +91,33 @@ export default function StudentCvPage() {
         </div>
       )}
 
+      <nav className="flex flex-wrap gap-2" aria-label="تبويبات ملف الطالب">
+        <button
+          type="button"
+          onClick={() => setTab("details")}
+          className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-bold transition-colors ${
+            tab === "details"
+              ? "border-[#1E4831] bg-[#1E4831] text-[#F9F5EC]"
+              : "border-[#D5C9AE] bg-white text-[#3E5E4D] hover:border-[#1E4831]"
+          }`}
+        >
+          <FileUser className="h-4 w-4" />
+          التفاصيل
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab("scores")}
+          className={`inline-flex cursor-pointer items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-bold transition-colors ${
+            tab === "scores"
+              ? "border-[#1E4831] bg-[#1E4831] text-[#F9F5EC]"
+              : "border-[#D5C9AE] bg-white text-[#3E5E4D] hover:border-[#1E4831]"
+          }`}
+        >
+          <Trophy className="h-4 w-4" />
+          نظام النقاط
+        </button>
+      </nav>
+
       {error && (
         <p role="alert" className="rounded-xl border border-[#DE2F2C]/25 bg-[#FDE8E7] px-4 py-3 text-sm font-medium text-[#931815]">
           {error}
@@ -95,9 +126,20 @@ export default function StudentCvPage() {
 
       {!bundle && !error && <p className="text-sm text-[#657F71]">جارٍ تحميل الملف...</p>}
 
-      {bundle && <StudentDetailsViewer bundle={bundle} />}
+      {bundle && tab === "details" && <StudentDetailsViewer bundle={bundle} />}
 
-      {bundle && editing && (
+      {bundle && tab === "scores" && (
+        <StudentScorePanel
+          studentUserId={userId}
+          student={
+            bundle.user
+              ? { name: bundle.user.name, email: bundle.user.email, score: (bundle.user as { score?: number }).score }
+              : null
+          }
+        />
+      )}
+
+      {bundle && editing && tab === "details" && (
         <StudentEditModal
           userId={userId}
           bundle={bundle}

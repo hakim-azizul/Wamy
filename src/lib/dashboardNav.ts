@@ -49,6 +49,7 @@ export const DASHBOARD_NAV: Record<UserRole, DashboardNavLink[]> = {
       label: "الطلاب وملفاتهم",
       icon: GraduationCap,
     },
+    { href: "/dashboard/manager/scores", label: "نظام النقاط", icon: Trophy },
   ],
   supervisor: [
     { href: "/dashboard", label: "نظرة عامة", icon: LayoutDashboard },
@@ -62,6 +63,7 @@ export const DASHBOARD_NAV: Record<UserRole, DashboardNavLink[]> = {
       label: "إضافة طالب",
       icon: UserPlus,
     },
+    { href: "/dashboard/supervisor/scores", label: "نظام النقاط", icon: Trophy },
   ],
   student: [
     { href: "/dashboard", label: "نظرة عامة", icon: LayoutDashboard },
@@ -70,6 +72,7 @@ export const DASHBOARD_NAV: Record<UserRole, DashboardNavLink[]> = {
       label: "ملفي ودرجتي",
       icon: IdCard,
     },
+    { href: "/dashboard/student/scores", label: "نظام النقاط", icon: Trophy },
     {
       href: "/dashboard/student/profile",
       label: "بياناتي (5 أقسام)",

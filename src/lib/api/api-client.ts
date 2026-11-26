@@ -1,3 +1,4 @@
+import type { ScoreTransaction } from "@/lib/types/scores";
 import type { StudentFullDetailsBundle } from "@/lib/types/studentDetails";
 import type { IUser } from "@/lib/types/users";
 
@@ -13,6 +14,8 @@ export type SectionSaveResponse = {
   section: Record<string, unknown> & { _id?: string; userId?: string; isCompleted?: boolean };
   completionSummary: { completedSections: number; totalSections: 5 };
 };
+export type ScoreTransactionsResponse = { transactions: ScoreTransaction[]; count: number };
+export type ScoreAdjustResponse = { transaction: ScoreTransaction; student: IUser };
 
 export class ApiError extends Error {
   readonly status: number;
