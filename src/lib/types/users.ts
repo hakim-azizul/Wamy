@@ -10,6 +10,8 @@ export interface IUser {
   phone: string | null;
   createdBy: string | null; // creator's name (e.g., logged-in manager/supervisor name)
   score?: number; // ONLY present when role === "student" (initialized from INITIAL_REVIEW_SCORE)
+  roomNumber?: string; // ONLY present when role === "student" (assigned at account creation)
+  flatNumber?: string; // ONLY present when role === "student" (assigned at account creation)
   createdAt: Date | string;
   updatedAt: Date | string;
 }

@@ -87,8 +87,8 @@ export default function DashboardOverview() {
             <SummaryCard
               label="الشقة / الغرفة"
               value={
-                bundle?.personal
-                  ? `${bundle.personal.flatNo} / ${bundle.personal.roomNo}`
+                bundle?.user?.flatNumber || bundle?.user?.roomNumber
+                  ? `${bundle.user.flatNumber ?? "—"} / ${bundle.user.roomNumber ?? "—"}`
                   : "—"
               }
             />

@@ -12,7 +12,7 @@ import {
   type SectionMeta,
 } from "@/lib/studentDetailsMeta";
 import type { StudentProfileSectionKey } from "@/lib/types/studentDetails";
-import { FormMessage, MetaField } from "../shared/FormFields";
+import { FormMessage, MetaField, ReadOnlyField } from "../shared/FormFields";
 
 type FormValues = Record<string, string>;
 type ValuesBySection = Record<StudentProfileSectionKey, FormValues>;
@@ -71,6 +71,7 @@ export default function ProfileForm() {
     additional: false,
   });
   const [completion, setCompletion] = useState(0);
+  const [accountFields, setAccountFields] = useState<StudentDetailsBundleResponse["user"]>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -81,6 +82,7 @@ export default function ProfileForm() {
     apiFetch<StudentDetailsBundleResponse>("/api/student-details/me")
       .then((bundle) => {
         if (!mounted) return;
+        setAccountFields(bundle.user ?? null);
         setValues(
           Object.fromEntries(
             STUDENT_DETAIL_SECTIONS.map((section) => [
@@ -232,6 +234,19 @@ export default function ProfileForm() {
         </div>
 
         <form onSubmit={handleSubmit} dir="rtl" className="space-y-5">
+          {(section.key === "personal" || section.key === "academic") && accountFields && (
+            <div className="rounded-xl border border-[#D5C9AE] bg-[#F4EFE2] p-4">
+              <p className="mb-3 text-sm font-extrabold text-[#1E4831]">
+                بيانات الحساب (من سجل المستخدم — غير قابلة للتعديل هنا)
+              </p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <ReadOnlyField label="البريد الإلكتروني" value={accountFields.email} ltr />
+                <ReadOnlyField label="رقم الغرفة" value={accountFields.roomNumber} ltr />
+                <ReadOnlyField label="رقم الشقة" value={accountFields.flatNumber} ltr />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {section.fields.map((field) => (
               <div key={field.name} className={field.type === "textarea" ? "sm:col-span-2" : undefined}>

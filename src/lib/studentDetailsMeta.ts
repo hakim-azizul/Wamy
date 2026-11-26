@@ -98,8 +98,6 @@ export const STUDENT_DETAIL_SECTIONS: SectionMeta[] = [
       { name: "nationality", label: "الجنسية", required: true },
       { name: "religion", label: "الديانة", type: "select", options: religionOptions },
       { name: "maritalStatus", label: "الحالة الاجتماعية", type: "select", options: maritalOptions, required: true },
-      { name: "flatNo", label: "رقم الشقة", ltr: true, required: true },
-      { name: "roomNo", label: "رقم الغرفة", ltr: true, required: true },
       { name: "detailedAddress", label: "العنوان التفصيلي في بلد الطالب", type: "textarea", required: true },
       { name: "phone", label: "رقم الهاتف", type: "tel", ltr: true, required: true },
       { name: "personalEmail", label: "البريد الشخصي", type: "email", ltr: true, required: true },

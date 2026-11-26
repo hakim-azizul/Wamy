@@ -105,6 +105,30 @@ export function MetaField({
   );
 }
 
+/** Read-only field whose value comes from the canonical Better Auth user record. */
+export function ReadOnlyField({
+  label,
+  value,
+  ltr = false,
+}: {
+  label: string;
+  value: string | null | undefined;
+  ltr?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-sm font-semibold text-[#1E4831]">{label}</label>
+      <div
+        dir={ltr ? "ltr" : undefined}
+        className="w-full cursor-default rounded-xl border border-dashed border-[#B9A988] bg-[#F4EFE2] px-4 py-2.5 text-sm font-bold text-[#3E5E4D]"
+      >
+        {value || "—"}
+      </div>
+      <p className="text-[11px] text-[#657F71]">من بيانات الحساب — للقراءة فقط</p>
+    </div>
+  );
+}
+
 export function FormMessage({ text, tone }: { text: string; tone: "error" | "success" }) {
   return (
     <p

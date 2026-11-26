@@ -3,10 +3,12 @@
 import React, { useState } from "react";
 import { Link } from "@heroui/react";
 import Image from "next/image";
+import { useAuthStatus } from "@/lib/useAuthStatus";
 
 export default function AppNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("#about");
+  const { isAuthenticated } = useAuthStatus();
 
   const navItems = [
     { label: "من نحن", href: "#about" },
@@ -100,7 +102,7 @@ export default function AppNavbar() {
         {/* বাম পাশের অংশ: Outlined মেম্বার লগইন বাটন */}
         <div>
           <Link
-            href="/signin"
+            href={isAuthenticated ? "/dashboard" : "/signin"}
             className="group border border-[#1E4831]/40 bg-[#F9F5EC]/70 px-5 py-2.5 text-sm font-semibold text-[#1E4831] rounded-full flex flex-row items-center gap-2 transition-all duration-300 hover:border-[#1E4831] hover:bg-[#1E4831] hover:text-[#F9F5EC] active:bg-[#132F20]"
           >
             <span>
@@ -119,7 +121,7 @@ export default function AppNavbar() {
                 />
               </svg>
             </span>
-            دخول الأعضاء
+            {isAuthenticated ? "لوحة التحكم" : "دخول الأعضاء"}
           </Link>
         </div>
       </nav>

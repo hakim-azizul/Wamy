@@ -68,6 +68,8 @@ export default function StudentDirectory({
             <tr>
               <th className="px-4 py-3 font-bold">الطالب</th>
               <th className="px-4 py-3 font-bold">البريد الإلكتروني</th>
+              <th className="px-4 py-3 font-bold">الغرفة</th>
+              <th className="px-4 py-3 font-bold">الشقة</th>
               <th className="px-4 py-3 font-bold">أنشأه</th>
               <th className="px-4 py-3 font-bold">الدرجة</th>
               {showCompletion && <th className="px-4 py-3 font-bold">الاكتمال</th>}
@@ -77,7 +79,7 @@ export default function StudentDirectory({
           <tbody className="divide-y divide-[#D5C9AE]/70">
             {students.length === 0 ? (
               <tr>
-                <td colSpan={showCompletion ? 6 : 5} className="px-4 py-8 text-center text-[#657F71]">
+                <td colSpan={showCompletion ? 8 : 7} className="px-4 py-8 text-center text-[#657F71]">
                   لا يوجد طلاب بعد.
                 </td>
               </tr>
@@ -86,6 +88,8 @@ export default function StudentDirectory({
                 <tr key={student._id} className="transition-colors hover:bg-white">
                   <td className="px-4 py-3 font-semibold text-[#1E4831]">{student.name}</td>
                   <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{student.email}</td>
+                  <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{student.roomNumber ?? "—"}</td>
+                  <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{student.flatNumber ?? "—"}</td>
                   <td className="px-4 py-3 text-[#3E5E4D]">{student.createdBy ?? "—"}</td>
                   <td className="px-4 py-3 font-bold text-[#1E4831]">{student.score ?? "—"}</td>
                   {showCompletion && (

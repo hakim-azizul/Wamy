@@ -6,7 +6,14 @@ import { useRouter } from "next/navigation";
 import { apiFetch, type UserResponse } from "@/lib/api/api-client";
 import { FormMessage, TextField } from "../shared/FormFields";
 
-const EMPTY_FORM = { name: "", email: "", password: "", phone: "" };
+const EMPTY_FORM = {
+  name: "",
+  email: "",
+  password: "",
+  phone: "",
+  roomNumber: "",
+  flatNumber: "",
+};
 
 export default function CreateStudentForm() {
   const router = useRouter();
@@ -29,6 +36,8 @@ export default function CreateStudentForm() {
           email: form.email.trim().toLowerCase(),
           password: form.password,
           phone: form.phone.trim() || null,
+          roomNumber: form.roomNumber.trim(),
+          flatNumber: form.flatNumber.trim(),
         }),
       });
       setSuccess(`تم إنشاء حساب الطالب "${user.name}" بنجاح. سيقوم الطالب بتعبئة بياناته الخمسة بنفسه.`);
@@ -88,11 +97,27 @@ export default function CreateStudentForm() {
             onChange={(value) => setForm({ ...form, phone: value })}
             placeholder="+20 ..."
           />
+          <TextField
+            name="roomNumber"
+            label="رقم الغرفة"
+            ltr
+            required
+            value={form.roomNumber}
+            onChange={(value) => setForm({ ...form, roomNumber: value })}
+            placeholder="مثال: 204"
+          />
+          <TextField
+            name="flatNumber"
+            label="رقم الشقة"
+            ltr
+            required
+            value={form.flatNumber}
+            onChange={(value) => setForm({ ...form, flatNumber: value })}
+            placeholder="مثال: 3"
+          />
 
           <p className="rounded-xl border border-[#1E4831]/15 bg-[#DCE6E0] px-4 py-3 text-xs text-[#3E5E4D] sm:col-span-2">
-            درجة المراجعة تُضاف تلقائيًا من إعداد الخادم
-            <span dir="ltr" className="mx-1 font-bold">INITIAL_REVIEW_SCORE</span>
-            ولا تُدخل يدويًا هنا.
+            رقم الغرفة والشقة يُخزّنان في حساب الطالب ويظهران بعد ذلك للقراءة فقط في بياناته.
           </p>
 
           {error && <FormMessage text={error} tone="error" />}

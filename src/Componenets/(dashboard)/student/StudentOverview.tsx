@@ -48,7 +48,9 @@ export default function StudentOverview() {
         <div className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-6">
           <p className="text-xs font-semibold text-[#657F71]">الشقة / الغرفة</p>
           <p className="mt-2 text-2xl font-extrabold text-[#1E4831]" dir="ltr">
-            {personal ? `${personal.flatNo} / ${personal.roomNo}` : "—"}
+            {bundle?.user?.flatNumber || bundle?.user?.roomNumber
+              ? `${bundle.user.flatNumber ?? "—"} / ${bundle.user.roomNumber ?? "—"}`
+              : "—"}
           </p>
         </div>
         <div className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-6">

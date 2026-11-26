@@ -27,7 +27,7 @@ export type ScholarshipStatusOption = "none" | "partial" | "full";
 
 export interface BaseStudentDetailCollection {
   _id?: string;
-  userId: string; // Reference to users._id (unique per student)
+  userId: string; // Reference to Better Auth user._id (unique per student)
   isCompleted: boolean;
   createdAt: Date | string;
   updatedAt: Date | string;
@@ -46,8 +46,6 @@ export interface StudentPersonalInfo extends BaseStudentDetailCollection {
   nationality: string; // الجنسية
   religion?: ReligionOption | null; // الديانة (اختياري: مسلم / مسيحي / أخرى)
   maritalStatus: MaritalStatusOption; // الحالة الاجتماعية
-  flatNo: string; // رقم الشقة
-  roomNo: string; // رقم الغرفة
   detailedAddress: string; // العنوان بالتفصيل في بلد الطالب
   phone: string; // رقم الهاتف
   personalEmail: string; // البريد الإلكتروني الشخصي
@@ -106,8 +104,17 @@ export interface StudentAdditionalInfo extends BaseStudentDetailCollection {
 }
 
 // Combined view for student profile dashboard
+/** Read-only account fields sourced from Better Auth's `user` document. */
+export interface StudentAccountFields {
+  name: string;
+  email: string;
+  roomNumber: string | null;
+  flatNumber: string | null;
+}
+
 export interface StudentFullDetailsBundle {
   userId: string;
+  user?: StudentAccountFields | null;
   personal: StudentPersonalInfo | null;
   academic: StudentAcademicInfo | null;
   skills: StudentSkillsAndTalents | null;

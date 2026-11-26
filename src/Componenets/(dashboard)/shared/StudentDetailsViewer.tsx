@@ -31,6 +31,32 @@ export default function StudentDetailsViewer({
         </div>
       )}
 
+      {bundle.user && (
+        <section className="rounded-2xl border border-[#1E4831]/20 bg-[#DCE6E0]/50 p-6 shadow-sm">
+          <h2 className="mb-5 border-b border-[#1E4831]/20 pb-3 text-lg font-extrabold text-[#1E4831]">
+            بيانات الحساب ( Better Auth user )
+          </h2>
+          <dl className="grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-2">
+            {[
+              { label: "الاسم", value: bundle.user.name, ltr: false },
+              { label: "البريد الإلكتروني", value: bundle.user.email, ltr: true },
+              { label: "رقم الغرفة", value: bundle.user.roomNumber, ltr: true },
+              { label: "رقم الشقة", value: bundle.user.flatNumber, ltr: true },
+            ].map((row) => (
+              <div
+                key={row.label}
+                className="flex items-center justify-between gap-4 border-b border-[#D5C9AE]/60 pb-2"
+              >
+                <dt className="text-xs font-semibold text-[#3E5E4D]">{row.label}</dt>
+                <dd dir={row.ltr ? "ltr" : undefined} className="text-sm font-bold text-[#1E4831]">
+                  {row.value || "—"}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
+
       {STUDENT_DETAIL_SECTIONS.map((section) => {
         const doc = bundle[section.key] as unknown as Record<string, unknown> | null;
         const done = Boolean(doc?.isCompleted);

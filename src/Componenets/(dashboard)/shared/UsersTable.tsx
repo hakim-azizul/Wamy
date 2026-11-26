@@ -66,7 +66,9 @@ export default function UsersTable({
                 <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{user.phone ?? "—"}</td>
                 {showScore && (
                   <td className="px-4 py-3">
-                    {onScoreChange ? (
+                    {user.role !== "student" ? (
+                      <span className="text-[#657F71]">—</span>
+                    ) : onScoreChange ? (
                       <ScoreCell
                         userId={user._id}
                         score={user.score}
