@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { canDeleteUser } from "@/lib/deletePermissions";
@@ -14,22 +13,17 @@ import type { IUser } from "@/lib/types/users";
 
 export default function UsersTable({
   users,
-  showScore = false,
   showCreatedBy = false,
-  onScoreChange,
   actorRole,
   onRequestDelete,
 }: {
   users: IUser[];
-  showScore?: boolean;
   showCreatedBy?: boolean;
-  onScoreChange?: (userId: string, score: number) => void;
   actorRole?: IUser["role"];
   onRequestDelete?: (user: IUser) => void;
 }) {
   const showDelete = Boolean(actorRole && onRequestDelete);
-  const columnCount =
-    6 + (showScore ? 1 : 0) + (showCreatedBy ? 1 : 0) + (showDelete ? 1 : 0);
+  const columnCount = 6 + (showCreatedBy ? 1 : 0) + (showDelete ? 1 : 0);
 
   return (
     <div className="overflow-x-auto rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC]">
@@ -42,7 +36,6 @@ export default function UsersTable({
             <th className="px-4 py-3 font-bold">الحالة</th>
             {showCreatedBy && <th className="px-4 py-3 font-bold">أنشأه</th>}
             <th className="px-4 py-3 font-bold">الهاتف</th>
-            {showScore && <th className="px-4 py-3 font-bold">الدرجة</th>}
             <th className="px-4 py-3 font-bold">تاريخ الإنشاء</th>
             {showDelete && <th className="px-4 py-3 font-bold">إجراء</th>}
           </tr>
@@ -73,21 +66,6 @@ export default function UsersTable({
                   <td className="px-4 py-3 text-[#3E5E4D]">{user.createdBy ?? "—"}</td>
                 )}
                 <td className="px-4 py-3 text-[#3E5E4D]" dir="ltr">{user.phone ?? "—"}</td>
-                {showScore && (
-                  <td className="px-4 py-3">
-                    {user.role !== "student" ? (
-                      <span className="text-[#657F71]">—</span>
-                    ) : onScoreChange ? (
-                      <ScoreCell
-                        userId={user._id}
-                        score={user.score}
-                        onSave={onScoreChange}
-                      />
-                    ) : (
-                      <span className="font-bold text-[#1E4831]">{user.score ?? "—"}</span>
-                    )}
-                  </td>
-                )}
                 <td className="px-4 py-3 text-[#657F71]">{formatDate(user.createdAt)}</td>
                 {showDelete && (
                   <td className="px-4 py-3">
@@ -110,44 +88,6 @@ export default function UsersTable({
           )}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-function ScoreCell({
-  userId,
-  score,
-  onSave,
-}: {
-  userId: string;
-  score?: number;
-  onSave: (userId: string, score: number) => void;
-}) {
-  const [value, setValue] = useState(String(score ?? 0));
-
-  useEffect(() => {
-    setValue(String(score ?? 0));
-  }, [score]);
-
-  return (
-    <div className="flex items-center gap-2" dir="ltr">
-      <input
-        type="number"
-        step="any"
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        className="w-20 rounded-lg border border-[#D5C9AE] bg-white px-2 py-1.5 text-sm text-[#1E4831] outline-none focus:border-[#1E4831]"
-      />
-      <button
-        type="button"
-        onClick={() => {
-          const next = Number(value);
-          if (Number.isFinite(next)) onSave(userId, next);
-        }}
-        className="cursor-pointer rounded-lg bg-[#1E4831] px-2.5 py-1.5 text-xs font-bold text-white transition-colors hover:bg-[#132F20]"
-      >
-        حفظ
-      </button>
     </div>
   );
 }

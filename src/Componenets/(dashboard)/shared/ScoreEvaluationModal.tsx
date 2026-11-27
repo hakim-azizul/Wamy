@@ -6,7 +6,10 @@ import {
   apiFetch,
   type ScoreAdjustResponse,
 } from "@/lib/api/api-client";
-import { VIOLATION_SEVERITY_OPTIONS } from "@/lib/scoreSystem";
+import {
+  SCORE_REASON_MAX_LENGTH,
+  VIOLATION_SEVERITY_OPTIONS,
+} from "@/lib/scoreSystem";
 import type { ViolationSeverity } from "@/lib/types/scores";
 import { FormMessage, TextField } from "./FormFields";
 
@@ -58,6 +61,10 @@ export default function ScoreEvaluationModal({
     }
     if (!reason.trim()) {
       setError("السبب مطلوب.");
+      return;
+    }
+    if (reason.trim().length > SCORE_REASON_MAX_LENGTH) {
+      setError(`السبب يجب ألا يتجاوز ${SCORE_REASON_MAX_LENGTH} حرفًا.`);
       return;
     }
 
@@ -179,11 +186,20 @@ export default function ScoreEvaluationModal({
               id="evaluation-reason"
               required
               rows={3}
+              maxLength={SCORE_REASON_MAX_LENGTH}
               value={reason}
               onChange={(event) => setReason(event.target.value)}
               placeholder="اكتب سبب الزيادة أو الخصم..."
               className="w-full rounded-xl border border-[#D5C9AE] bg-white px-4 py-2.5 text-sm text-[#1E4831] outline-none placeholder:text-[#657F71] focus:border-[#1E4831] focus:ring-2 focus:ring-[#1E4831]/15"
             />
+            <p
+              dir="ltr"
+              className={`text-left text-[11px] font-semibold ${
+                reason.length >= SCORE_REASON_MAX_LENGTH ? "text-[#DE2F2C]" : "text-[#657F71]"
+              }`}
+            >
+              {reason.length} / {SCORE_REASON_MAX_LENGTH}
+            </p>
           </div>
 
           {error && <FormMessage text={error} tone="error" />}

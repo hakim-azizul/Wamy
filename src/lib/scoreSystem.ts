@@ -1,5 +1,8 @@
 import type { ScoreStatusStep, ViolationSeverity } from "@/lib/types/scores";
 
+/** Shared score-adjustment reason limit (server enforces the same value). */
+export const SCORE_REASON_MAX_LENGTH = 70;
+
 export const VIOLATION_SEVERITY_OPTIONS: { value: ViolationSeverity; label: string }[] = [
   { value: "simple", label: "بسيطة" },
   { value: "moderate", label: "متوسطة" },

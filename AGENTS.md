@@ -73,6 +73,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - **Conditional severity rule:** `violationSeverity` (`simple`=بسيطة, `moderate`=متوسطة,
   `severe`=جسيمة) is REQUIRED only when `delta < 0`; for increases it is stripped and stored as
   `null` even if sent. Server rejects a decrease without a valid severity.
+- **Reason limit:** `reason` is required and capped at **70 characters** everywhere
+  (`SCORE_REASON_MAX_LENGTH` shared client/server). Client textareas use `maxLength={70}` with a
+  live `0 / 70` counter and validation feedback; `validateScoreChange()` rejects longer reasons.
 - `POST /api/scores` (manager/supervisor) atomically `$inc`s the student's `score` on the `user`
   document and inserts one transaction. `GET /api/scores` returns transactions newest-first:
   office roles see all (filter `?studentUserId=`/`?studentEmail=`), students see only their own.
@@ -132,7 +135,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   + inline severity badge (`بسيطة`/`متوسطة`/`جسيمة`) + inline `DD/MM/YYYY` date, and on the right
   the delta (`+5`/`-10`) grouped with the `100 → 105` balance transition. Less-essential inline
   metadata (modifier, date) hides on narrower screens instead of wrapping into tall stacked blocks.
-  Newest-to-oldest order and severity color coding are unchanged.
+  All compact metadata (direction icon, manager-only modifier, severity badge, date, delta/balance)
+  uses `shrink-0`; the reason alone truncates, so negative (`خصم`) logs with a severity badge still
+  fit on one line. Newest-to-oldest order and severity color coding are unchanged.
 
 ### Five modular student detail collections (unique `userId` index each)
 `student_personal_info` (`personal`), `student_academic_info` (`academic`),
@@ -163,7 +168,7 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   `isStudent`, `isManagerOrSupervisor`.
 - `db.js` — adds `scoreTransactionsCollection()` + `{studentUserId, createdAt}` index.
 - `utils/scoreValidation.js` — **created**: `validateScoreChange()` (non-zero integer delta,
-  required reason, conditional severity, strip on increase), `buildTransactionFilter()`,
+  required reason ≤70 chars, conditional severity, strip on increase), `buildTransactionFilter()`,
   `VIOLATION_SEVERITIES`/labels.
 - `services/scores.js` — **created**: atomic `adjustStudentScore()` ($inc + insert transaction),
   `listScoreTransactions()` (newest-first), `deleteScoreTransactionsForStudent()`, plus role-aware
@@ -172,7 +177,8 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `routes/scores.js` — **created**: `POST /api/scores` + `GET /api/scores` (role-scoped).
 - `index.js` — mounts `/api/scores`.
 - `services/users.js` — cascade deletion now also removes the student's score transactions.
-- `routes/users.js` — `POST /students` validates required `roomNumber`/`flatNumber`;
+- `routes/users.js` — `GET /` supports `?role=` filtering within the caller's scope;
+  `POST /students` validates required `roomNumber`/`flatNumber`;
   `PATCH /:id/score` rejects non-student targets with 400; **`DELETE /:id`** enforces the deletion
   RBAC (self-delete 403, student actor 403, missing 404, disallowed role 403) then cascades.
 - `routes/studentDetails.js` — adds **`PATCH /:userId/details`** (`verifyUser` +
@@ -250,9 +256,14 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `shared/StudentDirectory.tsx` — lists room/flat columns from the canonical user records.
 - `supervisor/CreateStudentForm.tsx` — required Room Number + Flat Number inputs; sends
   `roomNumber`/`flatNumber` in the student creation payload; no score input.
-- `manager/UsersView.tsx` + `shared/UsersTable.tsx` — score editor only rendered/allowed for
-  `role === "student"` rows; Delete action column shown via `actorRole`/`onRequestDelete` and
-  gated by `canDeleteUser` (manager never sees Delete on manager rows).
+- `manager/UsersView.tsx` + `shared/UsersTable.tsx` — **الدرجة column removed entirely** (and the
+  old inline score editor); Delete action column shown via `actorRole`/`onRequestDelete` and gated
+  by `canDeleteUser` (manager never sees Delete on manager rows).
+- **Role sorting on كل المستخدمين:** `UsersView` reads `?role=all|manager|supervisor|student` via
+  `useSearchParams()` and updates it with `useRouter().replace(pathname + query, { scroll: false })`,
+  so it persists across reloads/back-forward. The selected role is sent to the backend as
+  `GET /api/users?role=<role>`; the server applies it inside the caller's role scope (supervisors
+  stay limited to students). The page wraps `UsersView` in `<Suspense>`.
 - `manager/SupervisorsView.tsx` — Delete action on supervisor rows with confirmation modal.
 - `shared/StudentDirectory.tsx` — `عرض الملف` is now a `Link` to `/dashboard/students/<id>`;
   Delete action retained for manager/supervisor with the same modal; used by

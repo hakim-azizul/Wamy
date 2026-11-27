@@ -58,7 +58,7 @@ export default function ScoreHistory({
                   </span>
 
                   {showActor && actor && (
-                    <span className="hidden max-w-36 truncate text-[11px] opacity-80 lg:inline">
+                    <span className="hidden max-w-36 shrink-0 truncate text-[11px] opacity-80 lg:inline">
                       {actor}
                     </span>
                   )}
