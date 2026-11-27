@@ -69,14 +69,57 @@ export const SCORE_SCALE_STATIONS: ScoreScaleStation[] = [
   { key: "star", label: "نجم السكن", range: "200+", offset: 100, anchor: 200, side: "positive" },
 ];
 
-/** Accurate pointer position along the scale, interpolated between stations. */
-/** Green graduation for achievement stations, from soft near center to deep at the edge. */
-export function positiveStationColor(anchor: number): string {
-  if (anchor <= 125) return "#7FA98C";
-  if (anchor <= 175) return "#3E5E4D";
-  return "#1E4831";
+/**
+ * Continuous zone colors. One palette for every score and station, so the rail,
+ * the station dots and the current pointer always harmonize.
+ * Amber → orange → red below 100; neutral sand at 100; soft → medium → deep green above.
+ */
+const ZONE_STOPS: { score: number; color: string }[] = [
+  { score: 20, color: "#DE2F2C" },
+  { score: 45, color: "#E8822B" },
+  { score: 65, color: "#E0A530" },
+  { score: 85, color: "#D8BC45" },
+  { score: 100, color: "#C7B99B" },
+  { score: 125, color: "#A9C4B2" },
+  { score: 150, color: "#7FA98C" },
+  { score: 175, color: "#4F7D5F" },
+  { score: 200, color: "#1E4831" },
+];
+
+function mixHex(from: string, to: string, fraction: number): string {
+  const clamp = (value: number) => Math.max(0, Math.min(255, Math.round(value)));
+  const channel = (hex: string, index: number) => parseInt(hex.slice(index, index + 2), 16);
+  const part = (index: number) =>
+    clamp(channel(from, index) + (channel(to, index) - channel(from, index)) * fraction)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${part(1)}${part(3)}${part(5)}`;
 }
 
+export function scoreZoneColor(score: number): string {
+  const value = Math.max(20, Math.min(200, score));
+  if (value <= ZONE_STOPS[0].score) return ZONE_STOPS[0].color;
+  if (value >= ZONE_STOPS[ZONE_STOPS.length - 1].score) return ZONE_STOPS[ZONE_STOPS.length - 1].color;
+
+  for (let index = 0; index < ZONE_STOPS.length - 1; index += 1) {
+    const from = ZONE_STOPS[index];
+    const to = ZONE_STOPS[index + 1];
+    if (value >= from.score && value <= to.score) {
+      return mixHex(from.color, to.color, (value - from.score) / (to.score - from.score || 1));
+    }
+  }
+  return ZONE_STOPS[4].color;
+}
+
+export function positiveStationColor(anchor: number): string {
+  return scoreZoneColor(anchor);
+}
+
+export function negativeStationColor(anchor: number): string {
+  return scoreZoneColor(anchor);
+}
+
+/** Accurate pointer position along the scale, interpolated between stations. */
 export function scoreScalePosition(score: number): number {
   const value = Math.max(0, Math.min(200, score));
   const stations = SCORE_SCALE_STATIONS;
@@ -111,4 +154,36 @@ export function pointsToNextMilestone(score: number) {
   const toLeader = Math.max(0, 150 - score);
   const toStar = Math.max(0, 200 - score);
   return { toLeader, toStar };
+}
+
+export interface NextPositiveStation {
+  key: "leader" | "star";
+  label: string;
+  target: number;
+  remaining: number;
+  description: string;
+}
+
+/**
+ * The ONE next positive station to show in the unified card.
+ * null means the top tier (نجم السكن 200+) is already achieved.
+ */
+export function nextPositiveStation(score: number): NextPositiveStation | null {
+  if (score >= 200) return null;
+  if (score >= 150) {
+    return {
+      key: "star",
+      label: "نجم السكن",
+      target: 200,
+      remaining: 200 - score,
+      description: "200+ – درع الطالب المثالي",
+    };
+  }
+  return {
+    key: "leader",
+    label: "قائد",
+    target: 150,
+    remaining: 150 - score,
+    description: "150 – لوحة الشرف تعلق في مدخل السكن",
+  };
 }

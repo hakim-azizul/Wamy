@@ -3,30 +3,20 @@
 import { Check, Flag, Star, Trophy } from "lucide-react";
 import {
   currentStatus,
-  pointsToNextMilestone,
+  nextPositiveStation,
+  negativeStationColor,
   positiveStationColor,
   SCORE_SCALE_STATIONS,
   scoreScalePosition,
+  scoreZoneColor,
   type ScoreScaleStation,
 } from "@/lib/scoreSystem";
 
-/** Tone for a negative-station node: amber near 100 → orange → red as score falls. */
-function negativeStationColor(anchor: number): string {
-  if (anchor <= 40) return "#DE2F2C";
-  if (anchor <= 55) return "#E8822B";
-  if (anchor <= 65) return "#E0A530";
-  return "#D8BC45";
-}
+/** Smooth, continuous colors shared by the rail, nodes and pointer. */
+const indicatorColor = (score: number): string => scoreZoneColor(score);
 
-function indicatorColor(score: number): string {
-  if (score > 100) return positiveStationColor(score);
-  if (score === 100) return "#3E5E4D";
-  return negativeStationColor(score);
-}
-
-/** Continuous two-way rail: red → orange → amber → neutral → green. */
 const SCALE_RAIL_GRADIENT =
-  "linear-gradient(to right, #DE2F2C 0%, #E8822B 18%, #E0A530 34%, #D8BC45 47%, #EBE2CA 50%, #7FA98C 53%, #3E5E4D 72%, #1E4831 100%)";
+  "linear-gradient(to right, #DE2F2C 0%, #E8822B 18%, #E0A530 34%, #D8BC45 44%, #C7B99B 50%, #A9C4B2 56%, #7FA98C 66%, #4F7D5F 81%, #1E4831 100%)";
 
 /**
  * One unified, RTL, light glass card: current score + status + remaining-point
@@ -35,10 +25,15 @@ const SCALE_RAIL_GRADIENT =
  */
 export default function ScoreMilestoneCard({ score }: { score: number }) {
   const status = currentStatus(score);
-  const { toLeader, toStar } = pointsToNextMilestone(score);
+  const nextStation = nextPositiveStation(score);
   const offset = scoreScalePosition(score);
   const isPositive = score > 100;
   const isNegative = score < 100;
+  // When the pointer sits on a station, let the pointer carry the emphasis and
+  // keep the underlying anchor node light instead of stacking two heavy dots.
+  const pointerOnStation = SCORE_SCALE_STATIONS.some(
+    (station) => Math.abs(station.offset - offset) < 2.5,
+  );
 
   return (
     <section className="relative overflow-hidden rounded-3xl border border-white/70 bg-white/70 p-6 shadow-[0_8px_30px_rgba(30,72,49,0.08)] backdrop-blur-xl">
@@ -75,29 +70,38 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
           </div>
         </div>
 
-        <div className="grid w-full gap-3 sm:w-auto sm:grid-cols-2">
-          <div className="rounded-2xl border border-[#1E4831]/15 bg-white/75 p-3.5 shadow-sm backdrop-blur-md">
-            <div className="flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-[#1E4831]" />
-              <span className="text-[11px] font-bold text-[#1E4831]">إلى «قائد»</span>
+        {/* Only the single next positive milestone is shown at a time. */}
+        {nextStation ? (
+          <div className="flex min-w-[250px] items-center gap-4 rounded-2xl border border-[#1E4831]/15 bg-white/75 p-3.5 shadow-sm backdrop-blur-md">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#DCE6E0]/80 text-[#1E4831]">
+              {nextStation.key === "leader" ? (
+                <Trophy className="h-5 w-5" />
+              ) : (
+                <Star className="h-5 w-5" />
+              )}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold text-[#1E4831]">
+                الخطوة التالية: «{nextStation.label}»
+              </p>
+              <p className="mt-1 text-xl font-extrabold text-[#1E4831]" dir="ltr">
+                {nextStation.remaining} نقطة
+              </p>
+              <p className="mt-0.5 text-[10px] text-[#657F71]">{nextStation.description}</p>
             </div>
-            <p className="mt-1.5 text-xl font-extrabold text-[#1E4831]" dir="ltr">
-              {toLeader === 0 ? "✓ تم الوصول" : `${toLeader} نقطة`}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[#657F71]">150 — لوحة الشرف تعلق في مدخل السكن</p>
           </div>
-
-          <div className="rounded-2xl border border-[#DE2F2C]/15 bg-white/75 p-3.5 shadow-sm backdrop-blur-md">
-            <div className="flex items-center gap-2">
-              <Star className="h-4 w-4 text-[#DE2F2C]" />
-              <span className="text-[11px] font-bold text-[#931815]">إلى «نجم السكن»</span>
+        ) : (
+          <div className="flex min-w-[250px] items-center gap-4 rounded-2xl border border-[#1E4831]/25 bg-[#DCE6E0]/75 p-3.5 shadow-sm backdrop-blur-md">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/85 text-[#1E4831]">
+              <Star className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] font-extrabold text-[#1E4831]">أعلى مستوى تم الوصول ✓</p>
+              <p className="mt-1 text-lg font-extrabold text-[#1E4831]">نجم السكن</p>
+              <p className="mt-0.5 text-[10px] text-[#3E5E4D]">200+ — درع الطالب المثالي</p>
             </div>
-            <p className="mt-1.5 text-xl font-extrabold text-[#DE2F2C]" dir="ltr">
-              {toStar === 0 ? "✓ تم الوصول" : `${toStar} نقطة`}
-            </p>
-            <p className="mt-0.5 text-[10px] text-[#657F71]">200+ — درع الطالب المثالي</p>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Diverging scale: penalty stations left of center, achievement stations right. */}
@@ -115,17 +119,17 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
               {/* center marker — مبتدئ (100) */}
               <div className="absolute left-1/2 top-[19px] h-5 w-0.5 rounded-full bg-white/80 shadow-sm" />
 
-              {/* accurate pointer between stations, with a soft glow */}
+              {/* light, accurate pointer that works both on and between stations */}
               <div
-                className="absolute top-[24px] z-20 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500"
-                style={{ left: `${offset}%`, backgroundColor: `${indicatorColor(score)}33`, filter: "blur(2px)" }}
+                className="absolute top-[27px] z-20 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500"
+                style={{ left: `${offset}%`, backgroundColor: `${indicatorColor(score)}2E`, filter: "blur(3px)" }}
               />
               <div
-                className="absolute top-[24px] z-30 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md transition-all duration-500"
+                className="absolute top-[27px] z-30 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-all duration-500"
                 style={{ left: `${offset}%`, backgroundColor: indicatorColor(score) }}
               />
               <div
-                className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-2 py-0.5 text-[10px] font-extrabold shadow-sm backdrop-blur-md"
+                className="absolute -top-0.5 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/70 bg-white/80 px-2 py-0.5 text-[9px] font-bold shadow-sm backdrop-blur-md"
                 style={{ left: `${offset}%`, color: indicatorColor(score) }}
                 dir="rtl"
               >
@@ -150,6 +154,7 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
                     isCurrent={isCurrent}
                     achievedPositive={achievedPositive}
                     stationColor={stationColor}
+                    soften={isCurrent && pointerOnStation}
                   />
                 );
               })}
@@ -166,32 +171,36 @@ function StationNode({
   isCurrent,
   achievedPositive,
   stationColor,
+  soften,
 }: {
   station: ScoreScaleStation;
   isCurrent: boolean;
   achievedPositive: boolean;
   stationColor: string;
+  soften: boolean;
 }) {
+  const emphasized = isCurrent && !soften;
+
   return (
     <div
       className="absolute top-4 z-10 flex w-20 -translate-x-1/2 flex-col items-center text-center"
       style={{ left: `${station.offset}%` }}
     >
       <span
-        className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/80 text-[10px] font-extrabold shadow-sm transition-all"
+        className="flex h-7 w-7 items-center justify-center rounded-full border-2 text-[10px] font-extrabold shadow-sm transition-all"
         style={{
-          backgroundColor: isCurrent
+          backgroundColor: emphasized
             ? stationColor
             : achievedPositive
-              ? `${stationColor}33`
+              ? `${stationColor}3D`
               : `${stationColor}1F`,
-          color: isCurrent ? "#FFFFFF" : stationColor,
-          borderColor: isCurrent ? "#FFFFFF" : `${stationColor}A6`,
-          transform: isCurrent ? "scale(1.18)" : undefined,
-          boxShadow: isCurrent ? `0 0 0 4px ${stationColor}2E` : undefined,
+          color: emphasized ? "#FFFFFF" : stationColor,
+          borderColor: emphasized ? "#FFFFFF" : `${stationColor}A6`,
+          transform: emphasized ? "scale(1.12)" : undefined,
+          boxShadow: emphasized ? `0 0 0 3px ${stationColor}26` : undefined,
         }}
       >
-        {isCurrent ? "●" : achievedPositive ? <Check className="h-3.5 w-3.5" /> : ""}
+        {emphasized ? "●" : achievedPositive ? <Check className="h-3.5 w-3.5" /> : ""}
       </span>
       <span
         dir="rtl"

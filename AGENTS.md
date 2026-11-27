@@ -82,20 +82,28 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - Student CV page tabs: `التفاصيل` (profile + Edit modal) and `نظام النقاط` (unified card, adjust
   form, history).
 - **Unified Score & Evaluation Scale Card** (`shared/ScoreMilestoneCard.tsx`): one light
-  glassmorphism RTL card with current score, current status badge, remaining-point badges to 150
-  (قائد) and 200+ (نجم السكن), plus a **diverging horizontal scale** centered on «مبتدئ» = 100.
+  glassmorphism RTL card with current score, current status badge, a **single next-positive-station
+  card** (never both counters at once), plus a **diverging horizontal scale** centered on
+  «مبتدئ» = 100.
+- **Single next milestone card:** `nextPositiveStation(score)` picks exactly one target — below 150
+  show only «قائد» with `150 - score` points and "150 – لوحة الشرف تعلق في مدخل السكن"; from 150 to
+  199 show only «نجم السكن» with `200 - score` points and "200+ – درع الطالب المثالي"; at 200+ show
+  a concise top-tier achieved state instead of a redundant negative counter.
   Placed directly above `سجل النقاط` on the student route, CV score tab, and office scores view.
   Replaced the old vertical `ScoreRoadmap.tsx` and the earlier checklist-style strip.
 - **Diverging scale behavior:** مبتدئ (100) is the neutral midpoint of a **single continuous rail**
   colored across its whole length: red → warm orange → amber on the left, neutral sand at the
-  center, then soft green → deep green on the right. Penalty stations are LEFT of center and are
-  **never** marked completed/checked; achievement stations are RIGHT and show a green check when
-  reached. Each station dot is tinted to its own zone color (amber→orange→red on the negative side,
-  soft→deep green on the positive side, neutral at center); the current station is highlighted with
-  a solid zone-colored dot. A glowing pointer is interpolated **between station anchors**
-  (`scoreScalePosition()`), so scores between bands land accurately on the line with a floating
-  current-band pill. The scale viewport has horizontal padding so the edge labels
-  (`خارج السكن`, `نجم السكن`) are never clipped.
+  center, then **gradually** soft green → medium green → deep green on the right. Penalty stations
+  are LEFT of center and are **never** marked completed/checked; achievement stations are RIGHT and
+  show a check when reached.
+- **Continuous palette:** `scoreZoneColor()` / `ZONE_STOPS` in `scoreSystem.ts` linearly mixes
+  colors between anchor scores (20, 45, 65, 85, 100, 125, 150, 175, 200) so the rail, every
+  station dot and the current pointer always use harmonized, smoothly graduating colors.
+- **Smart pointer:** `scoreScalePosition()` interpolates between station anchors, so 125 (between
+  مبتدئ and نشيط) and 85 (between كسول and مبتدئ) land accurately. The small zone-colored pointer
+  plus a light pill shows the current band/score; when the score lands exactly on a station the
+  station node is deliberately softened (`soften`) so the anchor is not rendered as a heavy double
+  dot. Edge labels (`خارج السكن`, `نجم السكن`) stay unclipped via scale-viewport padding.
 - Station order (ascending, anchors): خارج السكن <40 (20) / خطأ جسيم 40–50 (45) / تعويض +50 (55) /
   سيئ 60–70 (65) / كسول 70–100 (85) / **مبتدئ 100 (100 = center)** / نشيط 100–150 (125) /
   قائد 150–200 (175) / نجم السكن 200+ (200).
@@ -234,9 +242,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   **`ScoreMilestoneCard.tsx`** (unified score + status + remaining badges + horizontal strip;
   replaced removed `ScoreRoadmap.tsx`), `StudentScorePanel.tsx` (CV score tab),
   `ScoreManagementView.tsx` (office list + sorting + adjustment).
-- `src/lib/scoreSystem.ts` — `SCORE_SCALE_STATIONS` (offset + score anchor + side),
-  `positiveStationColor()` / zone toning, `scoreScalePosition()` for diverging interpolation;
-  `currentStatus()` distinguishes تعويض/خطأ جسيم bands. Replaced `MILESTONE_TRACK`.
+- `src/lib/scoreSystem.ts` — `SCORE_SCALE_STATIONS` (offset + score anchor + side), continuous
+  `ZONE_STOPS`/`scoreZoneColor()` (with `mixHex()`), `positiveStationColor()` /
+  `negativeStationColor()` delegates, `scoreScalePosition()` interpolation, `nextPositiveStation()`
+  for the single target card; `currentStatus()` distinguishes تعويض/خطأ جسيم bands.
+  Replaced `MILESTONE_TRACK`.
 - `student/StudentScoreView.tsx` — student page: unified card above `سجل النقاط`.
 - Routes: `dashboard/manager/scores/page.tsx`, `dashboard/supervisor/scores/page.tsx`,
   `dashboard/student/scores/page.tsx`.
