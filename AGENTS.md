@@ -249,6 +249,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   Retry / Login actions instead of silently redirecting.
 - `(root)/shared/Navbar.tsx` + `Footer.tsx` — logo src corrected to `/Logo.png`.
 - `(root)/Home/welcomeMsg.tsx` — missing jpegs replaced with existing `/hero-building.jpeg`.
+- **Homepage section styling convention:** no horizontal dividers/borders between landing sections —
+  removed `border-b` from Hero, About/welcome and Facilities `<section>` roots, and the internal
+  `border-t` above the director note in About. Vertical `py-*` spacing is preserved so sections flow
+  cleanly; decorative card borders inside sections remain. Navbar `border-b`/mobile-menu `border-t`
+  and Footer `border-t` (outer + copyright bar) are intentionally unchanged.
 - `student/ProfileForm.tsx` — supports `?section=<key>` deep links from the sidebar; renders
   email/room/flat from `bundle.user` as read-only fields (`ReadOnlyField`) in personal/academic.
 - `shared/FormFields.tsx` — added `ReadOnlyField` for canonical user fields.

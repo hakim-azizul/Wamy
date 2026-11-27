@@ -60,7 +60,7 @@ export default function FacilitiesSection() {
     <section
       id="student-life"
       dir="rtl"
-      className="bg-linear-to-b from-[#EBE2CA] via-[#F4EFE2] to-[#EBE2CA] py-16 lg:py-24 border-b border-[#D5C9AE]"
+      className="bg-linear-to-b from-[#EBE2CA] via-[#F4EFE2] to-[#EBE2CA] py-16 lg:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* সেকশন হেডার (ডান পাশের মতো aligned) */}

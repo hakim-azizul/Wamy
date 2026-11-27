@@ -8,7 +8,7 @@ export default function WelcomeMsg() {
     <section
       id="about"
       dir="rtl"
-      className="bg-[#F4EFE2] py-16 lg:py-24 border-b border-[#D5C9AE]"
+      className="bg-[#F4EFE2] py-16 lg:py-24"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
@@ -45,7 +45,7 @@ export default function WelcomeMsg() {
             </div>
 
             {/* ঐতিহাসিক পটভূমি ও পরিচালক */}
-            <div className="w-full border-t border-[#D5C9AE] pt-5 space-y-4">
+            <div className="w-full pt-5 space-y-4">
               <p className="text-sm leading-relaxed text-[#3E5E4D] sm:text-[15px]">
                 ما بدأ كمبنى سكني واحد قبل عقدين من الزمن، أصبح اليوم سكنًا
                 استضاف آلاف الطلاب – كثير منهم يعودون اليوم كموجهين وداعمين

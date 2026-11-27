@@ -6,7 +6,7 @@ import Image from "next/image";
 
 export default function HeroSection() {
   return (
-    <section className="bg-linear-to-b from-[#EBE2CA] to-[#F4EFE2] py-12 lg:py-20 border-b border-[#D5C9AE]">
+    <section className="bg-linear-to-b from-[#EBE2CA] to-[#F4EFE2] py-12 lg:py-20">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-12">
           {/* ডান পাশের অংশ: শিরোনাম, বর্ণনা ও বাটন */}
