@@ -76,9 +76,14 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `POST /api/scores` (manager/supervisor) atomically `$inc`s the student's `score` on the `user`
   document and inserts one transaction. `GET /api/scores` returns transactions newest-first:
   office roles see all (filter `?studentUserId=`/`?studentEmail=`), students see only their own.
-- Client routes: `/dashboard/manager/scores`, `/dashboard/supervisor/scores` (student list with
-  sorting + score adjustment form + unified card + history), `/dashboard/student/scores`
-  (unified card directly above bank-style history). Students cannot adjust scores in the UI.
+- Client routes: `/dashboard/manager/scores`, `/dashboard/supervisor/scores` (**compact student
+  card list only** — no meter/history sections on the list page), shared
+  `/dashboard/points/[studentId]` (one student's unified meter + history for office roles),
+  `/dashboard/student/scores` (own unified card + history). Students cannot adjust scores in the UI.
+- **URL-driven sorting** on the office list: `?sort=score-desc|score-asc|name|room|flat|nationality`
+  read via `useSearchParams()` and updated with `useRouter().replace(pathname + query, { scroll:
+  false })` so it survives reloads and back/forward; `score-desc` is the default (no query param).
+  Both list pages wrap `ScoreManagementView` in `<Suspense>` (required for `useSearchParams`).
 - Student CV page tabs: `التفاصيل` (profile + Edit modal) and `نظام النقاط` (unified card, adjust
   form, history).
 - **Unified Score & Evaluation Scale Card** (`shared/ScoreMilestoneCard.tsx`): one light
@@ -241,7 +246,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   dropdown only for decreases), `ScoreHistory.tsx` (bank-style color-coded rows),
   **`ScoreMilestoneCard.tsx`** (unified score + status + remaining badges + horizontal strip;
   replaced removed `ScoreRoadmap.tsx`), `StudentScorePanel.tsx` (CV score tab),
-  `ScoreManagementView.tsx` (office list + sorting + adjustment).
+  `ScoreManagementView.tsx` (office compact card list + URL sorting, no lower meter/history),
+  `StudentPointsDetailView.tsx` (office points detail page).
+- `src/app/(dashboard)/dashboard/points/[studentId]/page.tsx` — **created**: shared office points
+  detail route; manager/supervisor scores pages wrap the list in `Suspense`.
+- `DashboardShell.tsx` — role guard now also permits `/dashboard/points/...` for office roles.
 - `src/lib/scoreSystem.ts` — `SCORE_SCALE_STATIONS` (offset + score anchor + side), continuous
   `ZONE_STOPS`/`scoreZoneColor()` (with `mixHex()`), `positiveStationColor()` /
   `negativeStationColor()` delegates, `scoreScalePosition()` interpolation, `nextPositiveStation()`
@@ -394,6 +403,8 @@ Never commit real values. Always **Redeploy** after any Vercel env change.
   manager→supervisor 200, manager→student 200, supervisor→self 403, supervisor→manager 403,
   supervisor→supervisor 403, supervisor→student 200, student→manager 403. Cascade verified:
   deleted student's `student_personal_info` and `account` counts both 0. Test accounts removed.
+- Points list/detail milestone: `npx tsc --noEmit` + `npm run build` pass; route list includes
+  `ƒ /dashboard/points/[studentId]`.
 - CV/PATCH milestone: `node --check` all server files; server restart healthy; `npx tsc --noEmit`;
   `npm run build` pass (route list now includes `ƒ /dashboard/students/[userId]`). Live PATCH test:
   manager partial edit → 200 with changed field `بعد التعديل`, cleared field `null`, bundle returned;

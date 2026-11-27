@@ -87,13 +87,14 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
     setMobileOpen(false);
   }, [pathname]);
 
-  // Role guard: role-scoped paths are private. The shared CV route
-  // /dashboard/students/[userId] is reserved for manager + supervisor.
+  // Role guard: role-scoped paths are private. Shared office routes
+  // /dashboard/students/[userId] and /dashboard/points/[studentId] are reserved
+  // for manager + supervisor.
   const roleSegment = pathname?.match(/^\/dashboard\/([^/]+)/)?.[1];
-  const sharedCvRoute =
-    roleSegment === "students" &&
+  const officeRoute =
+    (roleSegment === "students" || roleSegment === "points") &&
     (user?.role === "manager" || user?.role === "supervisor");
-  const hasAccess = !roleSegment || roleSegment === user?.role || sharedCvRoute;
+  const hasAccess = !roleSegment || roleSegment === user?.role || officeRoute;
 
   useEffect(() => {
     if (user && !hasAccess) {
