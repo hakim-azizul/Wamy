@@ -78,7 +78,8 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   office roles see all (filter `?studentUserId=`/`?studentEmail=`), students see only their own.
 - Client routes: `/dashboard/manager/scores`, `/dashboard/supervisor/scores` (**compact student
   card list only** — no meter/history sections on the list page), shared
-  `/dashboard/points/[studentId]` (one student's unified meter + history for office roles),
+  `/dashboard/points/[studentId]` (one student's unified meter + history for office roles, plus a
+  **«تقييم» two-tab evaluation modal** for managers/supervisors),
   `/dashboard/student/scores` (own unified card + history). Students cannot adjust scores in the UI.
 - **URL-driven sorting** on the office list: `?sort=score-desc|score-asc|name|room|flat|nationality`
   read via `useSearchParams()` and updated with `useRouter().replace(pathname + query, { scroll:
@@ -247,7 +248,13 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   **`ScoreMilestoneCard.tsx`** (unified score + status + remaining badges + horizontal strip;
   replaced removed `ScoreRoadmap.tsx`), `StudentScorePanel.tsx` (CV score tab),
   `ScoreManagementView.tsx` (office compact card list + URL sorting, no lower meter/history),
-  `StudentPointsDetailView.tsx` (office points detail page).
+  `StudentPointsDetailView.tsx` (office points detail page with «تقييم» button + instant refresh),
+  `ScoreEvaluationModal.tsx` (**created**: RTL light-theme modal with `زيادة` / `خصم` tabs,
+  positive amount + reason for increases, conditional `بسيطة`/`متوسطة`/`جسيمة` severity for
+  decreases, submit via `POST /api/scores`, busy/error feedback, Escape/close).
+- On successful evaluation the detail view updates the student's score from the API response and
+  silently refetches `/api/users` + `/api/scores?studentUserId=...`, so the diverging meter pointer
+  and newest-to-oldest `سجل النقاط` refresh without a page reload.
 - `src/app/(dashboard)/dashboard/points/[studentId]/page.tsx` — **created**: shared office points
   detail route; manager/supervisor scores pages wrap the list in `Suspense`.
 - `DashboardShell.tsx` — role guard now also permits `/dashboard/points/...` for office roles.
@@ -404,7 +411,7 @@ Never commit real values. Always **Redeploy** after any Vercel env change.
   supervisor→supervisor 403, supervisor→student 200, student→manager 403. Cascade verified:
   deleted student's `student_personal_info` and `account` counts both 0. Test accounts removed.
 - Points list/detail milestone: `npx tsc --noEmit` + `npm run build` pass; route list includes
-  `ƒ /dashboard/points/[studentId]`.
+  `ƒ /dashboard/points/[studentId]`; «تقييم» modal added with instant score/history refresh.
 - CV/PATCH milestone: `node --check` all server files; server restart healthy; `npx tsc --noEmit`;
   `npm run build` pass (route list now includes `ƒ /dashboard/students/[userId]`). Live PATCH test:
   manager partial edit → 200 with changed field `بعد التعديل`, cleared field `null`, bundle returned;

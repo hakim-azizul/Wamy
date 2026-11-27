@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ClipboardList } from "lucide-react";
 import {
   apiFetch,
+  type ScoreAdjustResponse,
   type ScoreTransactionsResponse,
   type StudentDetailsBundleResponse,
   type UsersResponse,
@@ -17,6 +18,7 @@ import {
 import type { IUser } from "@/lib/types/users";
 import { useDashboardUser } from "./DashboardShell";
 import { FormMessage } from "./FormFields";
+import ScoreEvaluationModal from "./ScoreEvaluationModal";
 import ScoreHistory from "./ScoreHistory";
 import ScoreMilestoneCard from "./ScoreMilestoneCard";
 
@@ -29,6 +31,8 @@ export default function StudentPointsDetailView() {
   const [transactions, setTransactions] = useState<ScoreTransactionsResponse["transactions"]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [evaluating, setEvaluating] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -56,8 +60,30 @@ export default function StudentPointsDetailView() {
     };
   }, [studentId]);
 
+  /** Quiet refresh after an evaluation — no full-page loading state. */
+  const refresh = useCallback(async () => {
+    try {
+      const [users, history] = await Promise.all([
+        apiFetch<UsersResponse>("/api/users"),
+        apiFetch<ScoreTransactionsResponse>(`/api/scores?studentUserId=${studentId}`),
+      ]);
+      setStudent(users.users.find((user) => user._id === studentId) ?? null);
+      setTransactions(history.transactions);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "تعذر تحديث بيانات النقاط.");
+    }
+  }, [studentId]);
+
+  function handleEvaluated(response: ScoreAdjustResponse) {
+    const newScore = response.student.score ?? response.transaction.newScore;
+    setStudent((current) => (current ? { ...current, score: newScore } : current));
+    setSuccess(`تم حفظ التقييم — الدرجة الحالية: ${newScore}.`);
+    void refresh();
+  }
+
   const backHref =
     actor?.role === "manager" ? "/dashboard/manager/scores" : "/dashboard/supervisor/scores";
+  const canEvaluate = actor?.role === "manager" || actor?.role === "supervisor";
 
   if (loading) {
     return <p className="text-sm text-[#657F71]">جارٍ تحميل بيانات النقاط...</p>;
@@ -65,15 +91,31 @@ export default function StudentPointsDetailView() {
 
   return (
     <div className="space-y-6">
-      <Link
-        href={backHref}
-        className="inline-flex items-center gap-1.5 text-xs font-bold text-[#657F71] transition-colors hover:text-[#DE2F2C]"
-      >
-        العودة إلى نظام النقاط
-        <ArrowRight className="h-4 w-4" />
-      </Link>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Link
+          href={backHref}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-[#657F71] transition-colors hover:text-[#DE2F2C]"
+        >
+          العودة إلى نظام النقاط
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        {canEvaluate && (
+          <button
+            type="button"
+            onClick={() => {
+              setSuccess("");
+              setEvaluating(true);
+            }}
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[#1E4831] px-5 py-2.5 text-sm font-bold text-[#F9F5EC] transition-colors hover:bg-[#132F20]"
+          >
+            <ClipboardList className="h-4 w-4" />
+            تقييم
+          </button>
+        )}
+      </div>
 
       {error && <FormMessage text={error} tone="error" />}
+      {success && <FormMessage text={success} tone="success" />}
 
       {student && (
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#D5C9AE] bg-[#EBE2CA] px-6 py-5">
@@ -105,6 +147,15 @@ export default function StudentPointsDetailView() {
       />
 
       <ScoreHistory transactions={transactions} />
+
+      {evaluating && (
+        <ScoreEvaluationModal
+          studentUserId={studentId}
+          studentName={student?.name}
+          onClose={() => setEvaluating(false)}
+          onSuccess={handleEvaluated}
+        />
+      )}
     </div>
   );
 }
