@@ -4,6 +4,7 @@ import { Check, Flag, Star, Trophy } from "lucide-react";
 import {
   currentStatus,
   pointsToNextMilestone,
+  positiveStationColor,
   SCORE_SCALE_STATIONS,
   scoreScalePosition,
   type ScoreScaleStation,
@@ -18,10 +19,14 @@ function negativeStationColor(anchor: number): string {
 }
 
 function indicatorColor(score: number): string {
-  if (score > 100) return "#1E4831";
+  if (score > 100) return positiveStationColor(score);
   if (score === 100) return "#3E5E4D";
   return negativeStationColor(score);
 }
+
+/** Continuous two-way rail: red → orange → amber → neutral → green. */
+const SCALE_RAIL_GRADIENT =
+  "linear-gradient(to right, #DE2F2C 0%, #E8822B 18%, #E0A530 34%, #D8BC45 47%, #EBE2CA 50%, #7FA98C 53%, #3E5E4D 72%, #1E4831 100%)";
 
 /**
  * One unified, RTL, light glass card: current score + status + remaining-point
@@ -98,67 +103,57 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
       {/* Diverging scale: penalty stations left of center, achievement stations right. */}
       <div className="relative mt-9" dir="ltr">
         <div className="overflow-x-auto pb-2">
-          <div className="relative h-24 min-w-[720px]">
-            {/* neutral rail */}
-            <div className="absolute left-0 right-0 top-[27px] h-1.5 rounded-full bg-[#D5C9AE]/50" />
-
-            {/* negative-side fill: amber → orange → red as it extends left from center */}
-            {isNegative && (
+          {/* horizontal padding keeps the first/last station labels unclipped */}
+          <div className="relative h-24 min-w-[760px] px-10">
+            <div className="relative h-full">
+              {/* one continuous, two-way colorized rail */}
               <div
-                className="absolute top-[27px] h-1.5 rounded-full transition-all duration-500"
-                style={{
-                  left: `${offset}%`,
-                  width: `${50 - offset}%`,
-                  background: "linear-gradient(to right, #D8BC45, #E0A530, #E8822B, #DE2F2C)",
-                }}
+                className="absolute left-0 right-0 top-[27px] h-2 rounded-full shadow-inner"
+                style={{ background: SCALE_RAIL_GRADIENT }}
               />
-            )}
 
-            {/* positive-side fill: green, extending right from center */}
-            {isPositive && (
+              {/* center marker — مبتدئ (100) */}
+              <div className="absolute left-1/2 top-[19px] h-5 w-0.5 rounded-full bg-white/80 shadow-sm" />
+
+              {/* accurate pointer between stations, with a soft glow */}
               <div
-                className="absolute top-[27px] h-1.5 rounded-full bg-gradient-to-r from-[#3E5E4D] to-[#1E4831] transition-all duration-500"
-                style={{ left: "50%", width: `${offset - 50}%` }}
+                className="absolute top-[24px] z-20 h-5 w-5 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500"
+                style={{ left: `${offset}%`, backgroundColor: `${indicatorColor(score)}33`, filter: "blur(2px)" }}
               />
-            )}
+              <div
+                className="absolute top-[24px] z-30 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-md transition-all duration-500"
+                style={{ left: `${offset}%`, backgroundColor: indicatorColor(score) }}
+              />
+              <div
+                className="absolute top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-2 py-0.5 text-[10px] font-extrabold shadow-sm backdrop-blur-md"
+                style={{ left: `${offset}%`, color: indicatorColor(score) }}
+                dir="rtl"
+              >
+                {status.label} · <span dir="ltr">{score}</span>
+              </div>
 
-            {/* center marker — مبتدئ (100) */}
-            <div className="absolute left-1/2 top-[19px] h-5 w-px bg-[#1E4831]/35" />
+              {/* station dots tinted to their zone color */}
+              {SCORE_SCALE_STATIONS.map((station) => {
+                const isCurrent = station.key === status.key;
+                const stationColor =
+                  station.side === "positive"
+                    ? positiveStationColor(station.anchor)
+                    : station.side === "center"
+                      ? "#3E5E4D"
+                      : negativeStationColor(station.anchor);
+                const achievedPositive = station.side === "positive" && score >= station.anchor;
 
-            {/* accurate pointer between stations */}
-            <div
-              className="absolute top-[22px] z-20 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-white shadow-md transition-all duration-500"
-              style={{ left: `${offset}%`, backgroundColor: indicatorColor(score) }}
-            />
-            <div
-              className="absolute top-0 z-10 -translate-x-1/2 whitespace-nowrap rounded-full border border-white/80 bg-white/90 px-2 py-0.5 text-[10px] font-extrabold shadow-sm backdrop-blur-md"
-              style={{ left: `${offset}%`, color: indicatorColor(score) }}
-              dir="rtl"
-            >
-              {status.label} · <span dir="ltr">{score}</span>
+                return (
+                  <StationNode
+                    key={station.key}
+                    station={station}
+                    isCurrent={isCurrent}
+                    achievedPositive={achievedPositive}
+                    stationColor={stationColor}
+                  />
+                );
+              })}
             </div>
-
-            {/* stations */}
-            {SCORE_SCALE_STATIONS.map((station) => {
-              const isCurrent = station.key === status.key;
-              const stationColor =
-                station.side === "positive"
-                  ? "#1E4831"
-                  : station.side === "center"
-                    ? "#3E5E4D"
-                    : negativeStationColor(station.anchor);
-              const achievedPositive = station.side === "positive" && score >= station.anchor;
-
-              return (
-                <StationNode
-                  key={station.key}
-                  station={station}
-                  isCurrent={isCurrent}
-                  achievedPositive={achievedPositive}
-                  stationColor={stationColor}
-                />
-              );
-            })}
           </div>
         </div>
       </div>
@@ -185,11 +180,15 @@ function StationNode({
       <span
         className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white/80 text-[10px] font-extrabold shadow-sm transition-all"
         style={{
-          backgroundColor: isCurrent ? stationColor : achievedPositive ? "#DCE6E0" : "#FFFFFF",
-          color: isCurrent ? "#FFFFFF" : achievedPositive ? "#1E4831" : "#7A8B81",
-          borderColor: isCurrent ? "#FFFFFF" : achievedPositive ? "#1E4831" : "#D5C9AE",
+          backgroundColor: isCurrent
+            ? stationColor
+            : achievedPositive
+              ? `${stationColor}33`
+              : `${stationColor}1F`,
+          color: isCurrent ? "#FFFFFF" : stationColor,
+          borderColor: isCurrent ? "#FFFFFF" : `${stationColor}A6`,
           transform: isCurrent ? "scale(1.18)" : undefined,
-          boxShadow: isCurrent ? `0 0 0 4px ${stationColor}22` : undefined,
+          boxShadow: isCurrent ? `0 0 0 4px ${stationColor}2E` : undefined,
         }}
       >
         {isCurrent ? "●" : achievedPositive ? <Check className="h-3.5 w-3.5" /> : ""}

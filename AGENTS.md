@@ -86,12 +86,16 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   (قائد) and 200+ (نجم السكن), plus a **diverging horizontal scale** centered on «مبتدئ» = 100.
   Placed directly above `سجل النقاط` on the student route, CV score tab, and office scores view.
   Replaced the old vertical `ScoreRoadmap.tsx` and the earlier checklist-style strip.
-- **Diverging scale behavior:** مبتدئ (100) is the neutral midpoint. Penalty stations are to the
-  LEFT and are **never** marked completed/checked regardless of score; achievement stations are to
-  the RIGHT and extend outward in **green** when reached. Scores below 100 extend outward from the
-  center with a smooth **amber → warm orange → red** gradient. The current station is highlighted
-  and a pointer is interpolated **between station anchors** (`scoreScalePosition()`), so scores
-  between bands land accurately on the line with a floating current-band pill.
+- **Diverging scale behavior:** مبتدئ (100) is the neutral midpoint of a **single continuous rail**
+  colored across its whole length: red → warm orange → amber on the left, neutral sand at the
+  center, then soft green → deep green on the right. Penalty stations are LEFT of center and are
+  **never** marked completed/checked; achievement stations are RIGHT and show a green check when
+  reached. Each station dot is tinted to its own zone color (amber→orange→red on the negative side,
+  soft→deep green on the positive side, neutral at center); the current station is highlighted with
+  a solid zone-colored dot. A glowing pointer is interpolated **between station anchors**
+  (`scoreScalePosition()`), so scores between bands land accurately on the line with a floating
+  current-band pill. The scale viewport has horizontal padding so the edge labels
+  (`خارج السكن`, `نجم السكن`) are never clipped.
 - Station order (ascending, anchors): خارج السكن <40 (20) / خطأ جسيم 40–50 (45) / تعويض +50 (55) /
   سيئ 60–70 (65) / كسول 70–100 (85) / **مبتدئ 100 (100 = center)** / نشيط 100–150 (125) /
   قائد 150–200 (175) / نجم السكن 200+ (200).
@@ -230,9 +234,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   **`ScoreMilestoneCard.tsx`** (unified score + status + remaining badges + horizontal strip;
   replaced removed `ScoreRoadmap.tsx`), `StudentScorePanel.tsx` (CV score tab),
   `ScoreManagementView.tsx` (office list + sorting + adjustment).
-- `src/lib/scoreSystem.ts` — `SCORE_SCALE_STATIONS` (offset + score anchor + side) and
-  `scoreScalePosition()` for diverging interpolation; `currentStatus()` now distinguishes
-  تعويض/خطأ جسيم bands. Replaced `MILESTONE_TRACK`.
+- `src/lib/scoreSystem.ts` — `SCORE_SCALE_STATIONS` (offset + score anchor + side),
+  `positiveStationColor()` / zone toning, `scoreScalePosition()` for diverging interpolation;
+  `currentStatus()` distinguishes تعويض/خطأ جسيم bands. Replaced `MILESTONE_TRACK`.
 - `student/StudentScoreView.tsx` — student page: unified card above `سجل النقاط`.
 - Routes: `dashboard/manager/scores/page.tsx`, `dashboard/supervisor/scores/page.tsx`,
   `dashboard/student/scores/page.tsx`.

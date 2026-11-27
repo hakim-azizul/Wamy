@@ -70,6 +70,13 @@ export const SCORE_SCALE_STATIONS: ScoreScaleStation[] = [
 ];
 
 /** Accurate pointer position along the scale, interpolated between stations. */
+/** Green graduation for achievement stations, from soft near center to deep at the edge. */
+export function positiveStationColor(anchor: number): string {
+  if (anchor <= 125) return "#7FA98C";
+  if (anchor <= 175) return "#3E5E4D";
+  return "#1E4831";
+}
+
 export function scoreScalePosition(score: number): number {
   const value = Math.max(0, Math.min(200, score));
   const stations = SCORE_SCALE_STATIONS;
