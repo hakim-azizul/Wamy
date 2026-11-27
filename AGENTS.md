@@ -81,13 +81,20 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   (unified card directly above bank-style history). Students cannot adjust scores in the UI.
 - Student CV page tabs: `التفاصيل` (profile + Edit modal) and `نظام النقاط` (unified card, adjust
   form, history).
-- **Unified Score & Milestone Card** (`shared/ScoreMilestoneCard.tsx`): one light glassmorphism RTL
-  card containing the current score, current status badge, remaining-point badges to 150 (قائد)
-  and 200+ (نجم السكن), and a **horizontal** milestone strip (reached nodes green, current node
-  highlighted, upcoming muted). Replaced the old vertical `ScoreRoadmap.tsx`. Placed directly
-  above `سجل النقاط` on the student route, the CV score tab, and the office scores view.
-- Milestone strip order (ascending): خارج السكن <40 / خطأ جسيم 40–50 / تعويض +50 / سيئ 60–70 /
-  كسول 70–100 / مبتدئ 100 / نشيط 100–150 / قائد 150–200 / نجم السكن 200+.
+- **Unified Score & Evaluation Scale Card** (`shared/ScoreMilestoneCard.tsx`): one light
+  glassmorphism RTL card with current score, current status badge, remaining-point badges to 150
+  (قائد) and 200+ (نجم السكن), plus a **diverging horizontal scale** centered on «مبتدئ» = 100.
+  Placed directly above `سجل النقاط` on the student route, CV score tab, and office scores view.
+  Replaced the old vertical `ScoreRoadmap.tsx` and the earlier checklist-style strip.
+- **Diverging scale behavior:** مبتدئ (100) is the neutral midpoint. Penalty stations are to the
+  LEFT and are **never** marked completed/checked regardless of score; achievement stations are to
+  the RIGHT and extend outward in **green** when reached. Scores below 100 extend outward from the
+  center with a smooth **amber → warm orange → red** gradient. The current station is highlighted
+  and a pointer is interpolated **between station anchors** (`scoreScalePosition()`), so scores
+  between bands land accurately on the line with a floating current-band pill.
+- Station order (ascending, anchors): خارج السكن <40 (20) / خطأ جسيم 40–50 (45) / تعويض +50 (55) /
+  سيئ 60–70 (65) / كسول 70–100 (85) / **مبتدئ 100 (100 = center)** / نشيط 100–150 (125) /
+  قائد 150–200 (175) / نجم السكن 200+ (200).
 - Color coding: increases=soft green; decreases `بسيطة`=amber/yellow, `متوسطة`=warm orange,
   `جسيمة`=soft red; severity badge shown on decreases only. `سجل النقاط` keeps newest-to-oldest order.
 
@@ -223,7 +230,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   **`ScoreMilestoneCard.tsx`** (unified score + status + remaining badges + horizontal strip;
   replaced removed `ScoreRoadmap.tsx`), `StudentScorePanel.tsx` (CV score tab),
   `ScoreManagementView.tsx` (office list + sorting + adjustment).
-- `src/lib/scoreSystem.ts` — added `MILESTONE_TRACK` (ascending nodes with thresholds) for the strip.
+- `src/lib/scoreSystem.ts` — `SCORE_SCALE_STATIONS` (offset + score anchor + side) and
+  `scoreScalePosition()` for diverging interpolation; `currentStatus()` now distinguishes
+  تعويض/خطأ جسيم bands. Replaced `MILESTONE_TRACK`.
 - `student/StudentScoreView.tsx` — student page: unified card above `سجل النقاط`.
 - Routes: `dashboard/manager/scores/page.tsx`, `dashboard/supervisor/scores/page.tsx`,
   `dashboard/student/scores/page.tsx`.
