@@ -18,73 +18,81 @@ export default function ScoreHistory({
   showActor?: boolean;
 }) {
   return (
-    <section className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-6 shadow-sm">
-      <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#D5C9AE] pb-3">
-        <h2 className="text-lg font-extrabold text-[#1E4831]">سجل النقاط</h2>
-        <span className="rounded-full border border-[#1E4831]/20 bg-white px-3 py-1 text-xs font-bold text-[#1E4831]">
+    <section className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-4 shadow-sm sm:p-5">
+      <div className="mb-3 flex items-center justify-between gap-3 border-b border-[#D5C9AE] pb-2">
+        <h2 className="text-base font-extrabold text-[#1E4831]">سجل النقاط</h2>
+        <span className="rounded-full border border-[#1E4831]/20 bg-white px-2.5 py-0.5 text-[11px] font-bold text-[#1E4831]">
           {transactions.length} عملية
         </span>
       </div>
 
       {transactions.length === 0 ? (
-        <p className="py-6 text-center text-sm text-[#657F71]">لا توجد عمليات على الدرجة بعد.</p>
+        <p className="py-5 text-center text-xs text-[#657F71]">لا توجد عمليات على الدرجة بعد.</p>
       ) : (
-        <div className="space-y-3" dir="rtl">
+        <div className="space-y-1.5" dir="rtl">
           {transactions.map((item) => {
             const increase = item.delta > 0;
             const severity = item.violationSeverity as ViolationSeverity | null;
+            const actor = item.actorName || item.actorEmail;
+
             return (
               <div
                 key={item._id}
-                className={`rounded-xl border px-4 py-3 shadow-sm ${transactionTone(item.delta, severity)}`}
+                className={`flex flex-nowrap items-center justify-between gap-2 whitespace-nowrap rounded-lg border px-2.5 py-1.5 text-xs shadow-sm sm:gap-3 sm:px-3 ${transactionTone(
+                  item.delta,
+                  severity,
+                )}`}
               >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-current/20 bg-white/70">
-                      {increase ? (
-                        <ArrowUpRight className="h-4 w-4" />
-                      ) : (
-                        <ArrowDownLeft className="h-4 w-4" />
-                      )}
-                    </span>
-                    <div className="space-y-1">
-                      <p className="text-sm font-extrabold">{item.reason}</p>
-                      {showActor && (
-                        <>
-                          <p className="text-xs opacity-80">
-                            {item.actorName || item.actorEmail} —{" "}
-                            {item.actorRole === "manager" ? "مدير" : "مشرف"}
-                          </p>
-                          {item.actorEmail && (
-                            <p dir="ltr" className="text-[11px] opacity-70">
-                              {item.actorEmail}
-                            </p>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span dir="ltr" className="text-lg font-extrabold">
-                      {increase ? "+" : ""}{item.delta}
-                    </span>
-                    <span dir="ltr" className="text-[11px] opacity-70">
-                      {item.previousScore} → {item.newScore}
-                    </span>
-                    <span dir="ltr" className="text-[11px] opacity-70">
-                      {formatDate(item.createdAt)}
-                    </span>
-                  </div>
-                </div>
+                {/* One horizontal group: direction, reason, actor (manager), severity, date. */}
+                <div className="flex min-w-0 flex-nowrap items-center gap-2">
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-current/20 bg-white/70">
+                    {increase ? (
+                      <ArrowUpRight className="h-3 w-3" />
+                    ) : (
+                      <ArrowDownLeft className="h-3 w-3" />
+                    )}
+                  </span>
 
-                {!increase && severity && (
-                  <div className="mt-3 flex items-center gap-2 border-t border-current/15 pt-2">
-                    <span className="text-xs font-semibold opacity-80">درجة المخالفة:</span>
-                    <span className={`rounded-full border px-2.5 py-0.5 text-xs font-bold ${severityBadgeClass(severity)}`}>
+                  <span className="max-w-[9rem] truncate font-bold sm:max-w-xs lg:max-w-md">
+                    {item.reason}
+                  </span>
+
+                  {showActor && actor && (
+                    <span className="hidden max-w-[9rem] truncate text-[11px] opacity-80 lg:inline">
+                      {actor}
+                    </span>
+                  )}
+
+                  {!increase && severity && (
+                    <span
+                      title="درجة المخالفة"
+                      aria-label={`درجة المخالفة: ${SEVERITY_LABELS[severity] ?? item.severityLabel ?? severity}`}
+                      className={`shrink-0 rounded-full border px-1.5 py-0 text-[10px] font-extrabold ${severityBadgeClass(
+                        severity,
+                      )}`}
+                    >
                       {SEVERITY_LABELS[severity] ?? item.severityLabel ?? severity}
                     </span>
-                  </div>
-                )}
+                  )}
+
+                  <span
+                    dir="ltr"
+                    className="hidden shrink-0 text-[10px] opacity-70 sm:inline"
+                  >
+                    {formatDate(item.createdAt)}
+                  </span>
+                </div>
+
+                {/* Delta + balance transition, grouped on the same line. */}
+                <div className="flex shrink-0 flex-nowrap items-center gap-2" dir="ltr">
+                  <span className="text-sm font-extrabold">
+                    {increase ? "+" : ""}
+                    {item.delta}
+                  </span>
+                  <span className="text-[10px] opacity-70">
+                    {item.previousScore} → {item.newScore}
+                  </span>
+                </div>
               </div>
             );
           })}

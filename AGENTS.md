@@ -120,9 +120,16 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   قائد 150–200 (175) / نجم السكن 200+ (200).
 - Color coding: increases=soft green; decreases `بسيطة`=amber/yellow, `متوسطة`=warm orange,
   `جسيمة`=soft red; severity badge shown on decreases only. `سجل النقاط` keeps newest-to-oldest order.
-- `ScoreHistory` takes `showActor` (default `false`); the modifier name/email/role block renders
+- `ScoreHistory` takes `showActor` (default `false`); the modifier name renders inline
   **only for managers** (`/dashboard/points/[studentId]`, CV score tab when actor is manager).
   Supervisors and students never render the attribution block/label.
+- **Compact bank-style rows:** each transaction is a **single horizontal line** (`flex
+  items-center justify-between`, `flex-nowrap`, `whitespace-nowrap`, `truncate` on the reason) with
+  minimal `py-1.5` height and tight gaps: direction icon + truncated reason + manager-only modifier
+  + inline severity badge (`بسيطة`/`متوسطة`/`جسيمة`) + inline `DD/MM/YYYY` date, and on the right
+  the delta (`+5`/`-10`) grouped with the `100 → 105` balance transition. Less-essential inline
+  metadata (modifier, date) hides on narrower screens instead of wrapping into tall stacked blocks.
+  Newest-to-oldest order and severity color coding are unchanged.
 
 ### Five modular student detail collections (unique `userId` index each)
 `student_personal_info` (`personal`), `student_academic_info` (`academic`),
