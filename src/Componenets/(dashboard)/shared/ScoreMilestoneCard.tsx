@@ -72,7 +72,7 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
 
         {/* Only the single next positive milestone is shown at a time. */}
         {nextStation ? (
-          <div className="flex min-w-[250px] items-center gap-4 rounded-2xl border border-[#1E4831]/15 bg-white/75 p-3.5 shadow-sm backdrop-blur-md">
+          <div className="flex min-w-62.5 items-center gap-4 rounded-2xl border border-[#1E4831]/15 bg-white/75 p-3.5 shadow-sm backdrop-blur-md">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#DCE6E0]/80 text-[#1E4831]">
               {nextStation.key === "leader" ? (
                 <Trophy className="h-5 w-5" />
@@ -91,7 +91,7 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
             </div>
           </div>
         ) : (
-          <div className="flex min-w-[250px] items-center gap-4 rounded-2xl border border-[#1E4831]/25 bg-[#DCE6E0]/75 p-3.5 shadow-sm backdrop-blur-md">
+          <div className="flex min-w-62.5 items-center gap-4 rounded-2xl border border-[#1E4831]/25 bg-[#DCE6E0]/75 p-3.5 shadow-sm backdrop-blur-md">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/85 text-[#1E4831]">
               <Star className="h-5 w-5" />
             </span>
@@ -108,24 +108,24 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
       <div className="relative mt-9" dir="ltr">
         <div className="overflow-x-auto pb-2">
           {/* horizontal padding keeps the first/last station labels unclipped */}
-          <div className="relative h-24 min-w-[760px] px-10">
+          <div className="relative h-24 min-w-190 px-10">
             <div className="relative h-full">
               {/* one continuous, two-way colorized rail */}
               <div
-                className="absolute left-0 right-0 top-[27px] h-2 rounded-full shadow-inner"
+                className="absolute left-0 right-0 top-6.75 h-2 rounded-full shadow-inner"
                 style={{ background: SCALE_RAIL_GRADIENT }}
               />
 
               {/* center marker — مبتدئ (100) */}
-              <div className="absolute left-1/2 top-[19px] h-5 w-0.5 rounded-full bg-white/80 shadow-sm" />
+              <div className="absolute left-1/2 top-4.75 h-5 w-0.5 rounded-full bg-white/80 shadow-sm" />
 
               {/* light, accurate pointer that works both on and between stations */}
               <div
-                className="absolute top-[27px] z-20 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500"
+                className="absolute top-6.75 z-20 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full transition-all duration-500"
                 style={{ left: `${offset}%`, backgroundColor: `${indicatorColor(score)}2E`, filter: "blur(3px)" }}
               />
               <div
-                className="absolute top-[27px] z-30 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-all duration-500"
+                className="absolute top-6.75 z-30 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-sm transition-all duration-500"
                 style={{ left: `${offset}%`, backgroundColor: indicatorColor(score) }}
               />
               <div
