@@ -39,6 +39,55 @@ export const SCORE_LADDER: ScoreStatusStep[] = [
   { key: "outside", label: "خارج السكن", range: "< 40" },
 ];
 
+export type ScoreScaleSide = "negative" | "center" | "positive";
+
+export interface ScoreScaleStation {
+  key: string;
+  label: string;
+  range: string;
+  /** Position on the horizontal scale (0 = far negative, 50 = مبتدئ, 100 = far positive). */
+  offset: number;
+  /** Representative score used for interpolation between stations. */
+  anchor: number;
+  side: ScoreScaleSide;
+}
+
+/**
+ * Diverging evaluation scale centered on «مبتدئ» = 100.
+ * Penalty stations live to the LEFT of center, achievement stations to the RIGHT.
+ * They are never treated as a sequential "completed" checklist.
+ */
+export const SCORE_SCALE_STATIONS: ScoreScaleStation[] = [
+  { key: "outside", label: "خارج السكن", range: "< 40", offset: 0, anchor: 20, side: "negative" },
+  { key: "grossError", label: "خطأ جسيم", range: "40 – 50", offset: 10, anchor: 45, side: "negative" },
+  { key: "compensation", label: "تعويض", range: "+50", offset: 20, anchor: 55, side: "negative" },
+  { key: "bad", label: "سيئ", range: "60 – 70", offset: 30, anchor: 65, side: "negative" },
+  { key: "lazy", label: "كسول", range: "70 – 100", offset: 40, anchor: 85, side: "negative" },
+  { key: "beginner", label: "مبتدئ", range: "100", offset: 50, anchor: 100, side: "center" },
+  { key: "active", label: "نشيط", range: "100 – 150", offset: 66.7, anchor: 125, side: "positive" },
+  { key: "leader", label: "قائد", range: "150 – 200", offset: 83.3, anchor: 175, side: "positive" },
+  { key: "star", label: "نجم السكن", range: "200+", offset: 100, anchor: 200, side: "positive" },
+];
+
+/** Accurate pointer position along the scale, interpolated between stations. */
+export function scoreScalePosition(score: number): number {
+  const value = Math.max(0, Math.min(200, score));
+  const stations = SCORE_SCALE_STATIONS;
+
+  if (value <= stations[0].anchor) return stations[0].offset;
+  if (value >= stations[stations.length - 1].anchor) return 100;
+
+  for (let index = 0; index < stations.length - 1; index += 1) {
+    const from = stations[index];
+    const to = stations[index + 1];
+    if (value >= from.anchor && value <= to.anchor) {
+      const fraction = (value - from.anchor) / (to.anchor - from.anchor || 1);
+      return from.offset + fraction * (to.offset - from.offset);
+    }
+  }
+  return 50;
+}
+
 export function currentStatus(score: number): ScoreStatusStep {
   if (score >= 200) return SCORE_LADDER[0];
   if (score >= 150) return SCORE_LADDER[1];
@@ -46,6 +95,8 @@ export function currentStatus(score: number): ScoreStatusStep {
   if (score === 100) return SCORE_LADDER[3];
   if (score >= 70) return SCORE_LADDER[4];
   if (score >= 60) return SCORE_LADDER[5];
+  if (score >= 50) return SCORE_LADDER[6];
+  if (score >= 40) return SCORE_LADDER[7];
   return SCORE_LADDER[8];
 }
 

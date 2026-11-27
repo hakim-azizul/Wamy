@@ -10,7 +10,7 @@ import type { IUser } from "@/lib/types/users";
 import { FormMessage } from "./FormFields";
 import ScoreAdjustForm from "./ScoreAdjustForm";
 import ScoreHistory from "./ScoreHistory";
-import ScoreRoadmap from "./ScoreRoadmap";
+import ScoreMilestoneCard from "./ScoreMilestoneCard";
 
 type SortKey = "score-desc" | "score-asc" | "name" | "room" | "flat";
 
@@ -144,9 +144,9 @@ export default function ScoreManagementView() {
         </section>
       )}
 
-      <ScoreHistory transactions={transactions} />
+      <ScoreMilestoneCard score={selected?.score ?? 100} />
 
-      <ScoreRoadmap score={selected?.score ?? 100} />
+      <ScoreHistory transactions={transactions} />
     </div>
   );
 }

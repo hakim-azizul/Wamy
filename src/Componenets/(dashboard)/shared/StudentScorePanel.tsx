@@ -10,10 +10,10 @@ import {
 import type { IUser } from "@/lib/types/users";
 import ScoreAdjustForm from "./ScoreAdjustForm";
 import ScoreHistory from "./ScoreHistory";
-import ScoreRoadmap from "./ScoreRoadmap";
+import ScoreMilestoneCard from "./ScoreMilestoneCard";
 import { FormMessage } from "./FormFields";
 
-/** Score tab used on the office CV page: current score, adjust form, history, roadmap. */
+/** Score tab used on the office CV page: unified score/milestone card, adjust form, history. */
 export default function StudentScorePanel({
   studentUserId,
   student,
@@ -54,12 +54,7 @@ export default function StudentScorePanel({
 
   return (
     <div className="space-y-6">
-      <div className="rounded-2xl border border-[#DE2F2C]/25 bg-linear-to-l from-[#FDE8E7] to-[#F9F5EC] p-6">
-        <p className="text-xs font-bold text-[#931815]">الدرجة الحالية</p>
-        <p className="mt-2 text-5xl font-extrabold text-[#DE2F2C]" dir="ltr">
-          {score ?? student?.score ?? "—"}
-        </p>
-      </div>
+      <ScoreMilestoneCard score={score ?? student?.score ?? 100} />
 
       {error && <FormMessage text={error} tone="error" />}
 
@@ -73,7 +68,6 @@ export default function StudentScorePanel({
       </section>
 
       <ScoreHistory transactions={transactions} />
-      <ScoreRoadmap score={score ?? student?.score ?? 100} />
     </div>
   );
 }

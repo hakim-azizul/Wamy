@@ -77,14 +77,19 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   document and inserts one transaction. `GET /api/scores` returns transactions newest-first:
   office roles see all (filter `?studentUserId=`/`?studentEmail=`), students see only their own.
 - Client routes: `/dashboard/manager/scores`, `/dashboard/supervisor/scores` (student list with
-  sorting + score adjustment form + history), `/dashboard/student/scores` (balance, bank-style
-  history, roadmap). Students cannot adjust scores in the UI.
-- Student CV page tabs: `التفاصيل` (profile + Edit modal) and `نظام النقاط` (score, adjust form,
-  history, roadmap).
+  sorting + score adjustment form + unified card + history), `/dashboard/student/scores`
+  (unified card directly above bank-style history). Students cannot adjust scores in the UI.
+- Student CV page tabs: `التفاصيل` (profile + Edit modal) and `نظام النقاط` (unified card, adjust
+  form, history).
+- **Unified Score & Milestone Card** (`shared/ScoreMilestoneCard.tsx`): one light glassmorphism RTL
+  card containing the current score, current status badge, remaining-point badges to 150 (قائد)
+  and 200+ (نجم السكن), and a **horizontal** milestone strip (reached nodes green, current node
+  highlighted, upcoming muted). Replaced the old vertical `ScoreRoadmap.tsx`. Placed directly
+  above `سجل النقاط` on the student route, the CV score tab, and the office scores view.
+- Milestone strip order (ascending): خارج السكن <40 / خطأ جسيم 40–50 / تعويض +50 / سيئ 60–70 /
+  كسول 70–100 / مبتدئ 100 / نشيط 100–150 / قائد 150–200 / نجم السكن 200+.
 - Color coding: increases=soft green; decreases `بسيطة`=amber/yellow, `متوسطة`=warm orange,
-  `جسيمة`=soft red; severity badge shown on decreases only.
-- Roadmap ladder: نجم السكن 200+ / قائد 150–200 / نشيط 100–150 / مبتدئ 100 / كسول 70–100 /
-  سيئ 60–70 / تعويض +50 / خطأ جسيم 40–50 / خارج السكن <40; shows points remaining to 150 and 200.
+  `جسيمة`=soft red; severity badge shown on decreases only. `سجل النقاط` keeps newest-to-oldest order.
 
 ### Five modular student detail collections (unique `userId` index each)
 `student_personal_info` (`personal`), `student_academic_info` (`academic`),
@@ -215,9 +220,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `src/app/(dashboard)/dashboard/students/[userId]/page.tsx` — **created**: dedicated CV route.
 - Score components (`shared/`): `ScoreAdjustForm.tsx` (direction toggle, conditional severity
   dropdown only for decreases), `ScoreHistory.tsx` (bank-style color-coded rows),
-  `ScoreRoadmap.tsx` (ladder + points to 150/200), `StudentScorePanel.tsx` (CV score tab),
+  **`ScoreMilestoneCard.tsx`** (unified score + status + remaining badges + horizontal strip;
+  replaced removed `ScoreRoadmap.tsx`), `StudentScorePanel.tsx` (CV score tab),
   `ScoreManagementView.tsx` (office list + sorting + adjustment).
-- `student/StudentScoreView.tsx` — **created**: student balance/history/roadmap page.
+- `src/lib/scoreSystem.ts` — added `MILESTONE_TRACK` (ascending nodes with thresholds) for the strip.
+- `student/StudentScoreView.tsx` — student page: unified card above `سجل النقاط`.
 - Routes: `dashboard/manager/scores/page.tsx`, `dashboard/supervisor/scores/page.tsx`,
   `dashboard/student/scores/page.tsx`.
 - `lib/dashboardNav.ts` — `نظام النقاط` added for all three roles.
