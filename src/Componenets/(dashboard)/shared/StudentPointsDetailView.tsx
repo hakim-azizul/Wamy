@@ -146,7 +146,10 @@ export default function StudentPointsDetailView() {
         score={student?.score ?? transactions[0]?.newScore ?? 100}
       />
 
-      <ScoreHistory transactions={transactions} />
+      <ScoreHistory
+        transactions={transactions}
+        showActor={actor?.role === "manager"}
+      />
 
       {evaluating && (
         <ScoreEvaluationModal

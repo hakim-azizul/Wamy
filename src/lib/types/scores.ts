@@ -4,10 +4,11 @@ export interface ScoreTransaction {
   _id: string;
   studentUserId: string;
   studentEmail: string;
-  actorUserId: string;
-  actorEmail: string;
+  // Modifier attribution is present ONLY for manager callers (server-enforced).
+  actorUserId?: string | null;
+  actorEmail?: string | null;
   actorName?: string | null;
-  actorRole: "manager" | "supervisor";
+  actorRole?: "manager" | "supervisor" | null;
   delta: number;
   previousScore: number;
   newScore: number;

@@ -76,6 +76,11 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `POST /api/scores` (manager/supervisor) atomically `$inc`s the student's `score` on the `user`
   document and inserts one transaction. `GET /api/scores` returns transactions newest-first:
   office roles see all (filter `?studentUserId=`/`?studentEmail=`), students see only their own.
+- **Manager-only modifier privacy:** `toClientTransaction(doc, includeActor)` returns
+  `actorUserId`/`actorEmail`/`actorName`/`actorRole` **only** when the authenticated caller's role
+  is `manager` (checked from `req.user.role`, the authoritative DB user). Supervisors and students
+  receive transactions with all actor identity fields omitted; score, delta, severity, reason and
+  timestamp are unchanged. Applied to both `GET /api/scores` and the `POST` response.
 - Client routes: `/dashboard/manager/scores`, `/dashboard/supervisor/scores` (**compact student
   card list only** — no meter/history sections on the list page), shared
   `/dashboard/points/[studentId]` (one student's unified meter + history for office roles, plus a
@@ -115,6 +120,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   قائد 150–200 (175) / نجم السكن 200+ (200).
 - Color coding: increases=soft green; decreases `بسيطة`=amber/yellow, `متوسطة`=warm orange,
   `جسيمة`=soft red; severity badge shown on decreases only. `سجل النقاط` keeps newest-to-oldest order.
+- `ScoreHistory` takes `showActor` (default `false`); the modifier name/email/role block renders
+  **only for managers** (`/dashboard/points/[studentId]`, CV score tab when actor is manager).
+  Supervisors and students never render the attribution block/label.
 
 ### Five modular student detail collections (unique `userId` index each)
 `student_personal_info` (`personal`), `student_academic_info` (`academic`),
@@ -148,7 +156,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   required reason, conditional severity, strip on increase), `buildTransactionFilter()`,
   `VIOLATION_SEVERITIES`/labels.
 - `services/scores.js` — **created**: atomic `adjustStudentScore()` ($inc + insert transaction),
-  `listScoreTransactions()` (newest-first), `deleteScoreTransactionsForStudent()`.
+  `listScoreTransactions()` (newest-first), `deleteScoreTransactionsForStudent()`, plus role-aware
+  `toClientTransaction()` that strips modifier identity for non-managers.
+- `routes/scores.js` — passes `req.user.role === "manager"` into both list and adjust responses.
 - `routes/scores.js` — **created**: `POST /api/scores` + `GET /api/scores` (role-scoped).
 - `index.js` — mounts `/api/scores`.
 - `services/users.js` — cascade deletion now also removes the student's score transactions.

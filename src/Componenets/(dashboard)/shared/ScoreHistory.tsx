@@ -9,7 +9,14 @@ import {
 } from "@/lib/scoreSystem";
 import type { ScoreTransaction, ViolationSeverity } from "@/lib/types/scores";
 
-export default function ScoreHistory({ transactions }: { transactions: ScoreTransaction[] }) {
+export default function ScoreHistory({
+  transactions,
+  showActor = false,
+}: {
+  transactions: ScoreTransaction[];
+  /** Manager-only: render who made the change. Never enabled for student/supervisor. */
+  showActor?: boolean;
+}) {
   return (
     <section className="rounded-2xl border border-[#D5C9AE] bg-[#F9F5EC] p-6 shadow-sm">
       <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#D5C9AE] pb-3">
@@ -42,10 +49,19 @@ export default function ScoreHistory({ transactions }: { transactions: ScoreTran
                     </span>
                     <div className="space-y-1">
                       <p className="text-sm font-extrabold">{item.reason}</p>
-                      <p className="text-xs opacity-80">
-                        {item.actorName || item.actorEmail} — {item.actorRole === "manager" ? "مدير" : "مشرف"}
-                      </p>
-                      <p dir="ltr" className="text-[11px] opacity-70">{item.actorEmail}</p>
+                      {showActor && (
+                        <>
+                          <p className="text-xs opacity-80">
+                            {item.actorName || item.actorEmail} —{" "}
+                            {item.actorRole === "manager" ? "مدير" : "مشرف"}
+                          </p>
+                          {item.actorEmail && (
+                            <p dir="ltr" className="text-[11px] opacity-70">
+                              {item.actorEmail}
+                            </p>
+                          )}
+                        </>
+                      )}
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-2">

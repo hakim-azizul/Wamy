@@ -8,6 +8,7 @@ import {
   type UsersResponse,
 } from "@/lib/api/api-client";
 import type { IUser } from "@/lib/types/users";
+import { useDashboardUser } from "./DashboardShell";
 import ScoreAdjustForm from "./ScoreAdjustForm";
 import ScoreHistory from "./ScoreHistory";
 import ScoreMilestoneCard from "./ScoreMilestoneCard";
@@ -21,6 +22,7 @@ export default function StudentScorePanel({
   studentUserId: string;
   student?: Pick<IUser, "name" | "email" | "score"> | null;
 }) {
+  const actor = useDashboardUser();
   const [score, setScore] = useState<number | null>(student?.score ?? null);
   const [transactions, setTransactions] = useState<ScoreTransactionsResponse["transactions"]>([]);
   const [error, setError] = useState("");
@@ -67,7 +69,10 @@ export default function StudentScorePanel({
         />
       </section>
 
-      <ScoreHistory transactions={transactions} />
+      <ScoreHistory
+        transactions={transactions}
+        showActor={actor?.role === "manager"}
+      />
     </div>
   );
 }
