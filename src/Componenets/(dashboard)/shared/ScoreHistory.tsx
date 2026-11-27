@@ -53,12 +53,12 @@ export default function ScoreHistory({
                     )}
                   </span>
 
-                  <span className="max-w-[9rem] truncate font-bold sm:max-w-xs lg:max-w-md">
+                  <span className="max-w-36 truncate font-bold sm:max-w-xs lg:max-w-md">
                     {item.reason}
                   </span>
 
                   {showActor && actor && (
-                    <span className="hidden max-w-[9rem] truncate text-[11px] opacity-80 lg:inline">
+                    <span className="hidden max-w-36 truncate text-[11px] opacity-80 lg:inline">
                       {actor}
                     </span>
                   )}

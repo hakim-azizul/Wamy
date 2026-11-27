@@ -70,21 +70,45 @@ export default function ScoreMilestoneCard({ score }: { score: number }) {
           </div>
         </div>
 
-        {/* Only the single next positive milestone is shown at a time. */}
+        {/* Single next stoppage, always derived from the live score. */}
         {nextStation ? (
-          <div className="flex min-w-62.5 items-center gap-4 rounded-2xl border border-[#1E4831]/15 bg-white/75 p-3.5 shadow-sm backdrop-blur-md">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#DCE6E0]/80 text-[#1E4831]">
-              {nextStation.key === "leader" ? (
+          <div
+            className={`flex min-w-62.5 items-center gap-4 rounded-2xl border p-3.5 shadow-sm backdrop-blur-md ${
+              nextStation.recovery
+                ? "border-[#D5B44A]/45 bg-[#FFF6DA]/80"
+                : "border-[#1E4831]/15 bg-white/75"
+            }`}
+          >
+            <span
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                nextStation.recovery
+                  ? "bg-[#FFF0B8] text-[#7A5B10]"
+                  : "bg-[#DCE6E0]/80 text-[#1E4831]"
+              }`}
+            >
+              {nextStation.key === "beginner" ? (
+                <Flag className="h-5 w-5" />
+              ) : nextStation.key === "leader" ? (
                 <Trophy className="h-5 w-5" />
               ) : (
                 <Star className="h-5 w-5" />
               )}
             </span>
             <div className="min-w-0">
-              <p className="text-[11px] font-bold text-[#1E4831]">
-                الخطوة التالية: «{nextStation.label}»
+              <p
+                className={`text-[11px] font-bold ${
+                  nextStation.recovery ? "text-[#7A5B10]" : "text-[#1E4831]"
+                }`}
+              >
+                {nextStation.recovery ? "الخطوة التالية للتعافي: «" : "الخطوة التالية: «"}
+                {nextStation.label}»
               </p>
-              <p className="mt-1 text-xl font-extrabold text-[#1E4831]" dir="ltr">
+              <p
+                className={`mt-1 text-xl font-extrabold ${
+                  nextStation.recovery ? "text-[#7A5B10]" : "text-[#1E4831]"
+                }`}
+                dir="ltr"
+              >
                 {nextStation.remaining} نقطة
               </p>
               <p className="mt-0.5 text-[10px] text-[#657F71]">{nextStation.description}</p>

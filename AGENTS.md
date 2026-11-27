@@ -96,10 +96,13 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   glassmorphism RTL card with current score, current status badge, a **single next-positive-station
   card** (never both counters at once), plus a **diverging horizontal scale** centered on
   «مبتدئ» = 100.
-- **Single next milestone card:** `nextPositiveStation(score)` picks exactly one target — below 150
-  show only «قائد» with `150 - score` points and "150 – لوحة الشرف تعلق في مدخل السكن"; from 150 to
-  199 show only «نجم السكن» with `200 - score` points and "200+ – درع الطالب المثالي"; at 200+ show
-  a concise top-tier achieved state instead of a redundant negative counter.
+- **Dynamic single next-stoppage card:** `nextPositiveStation(score)` is derived from the live score
+  on every render/refresh (increases and decreases), so it never stays stale:
+  - `< 100` → recovery to «مبتدئ» (100), remaining `100 - score`, "100 — العودة إلى نقطة التوازن",
+    styled with an amber recovery theme.
+  - `100–149` → «قائد» (150), remaining `150 - score`.
+  - `150–199` → «نجم السكن» (200+), remaining `200 - score`.
+  - `>= 200` → concise top-tier achieved state (no negative counter).
   Placed directly above `سجل النقاط` on the student route, CV score tab, and office scores view.
   Replaced the old vertical `ScoreRoadmap.tsx` and the earlier checklist-style strip.
 - **Diverging scale behavior:** مبتدئ (100) is the neutral midpoint of a **single continuous rail**

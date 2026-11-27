@@ -84,7 +84,7 @@ export default function ScoreEvaluationModal({
   return (
     <div
       dir="rtl"
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-[#132F20]/55 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-70 flex items-center justify-center bg-[#132F20]/55 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="evaluation-modal-title"

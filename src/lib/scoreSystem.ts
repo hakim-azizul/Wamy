@@ -157,16 +157,19 @@ export function pointsToNextMilestone(score: number) {
 }
 
 export interface NextPositiveStation {
-  key: "leader" | "star";
+  key: "beginner" | "leader" | "star";
   label: string;
   target: number;
   remaining: number;
   description: string;
+  /** Recovery step below the neutral center, vs an achievement step above it. */
+  recovery: boolean;
 }
 
 /**
- * The ONE next positive station to show in the unified card.
- * null means the top tier (نجم السكن 200+) is already achieved.
+ * The ONE next stoppage to show in the unified card, derived from the live score.
+ * Below 100 the next step is recovery to «مبتدئ» (100); from 100 up it walks the
+ * positive milestones. null means the top tier (نجم السكن 200+) is achieved.
  */
 export function nextPositiveStation(score: number): NextPositiveStation | null {
   if (score >= 200) return null;
@@ -177,13 +180,25 @@ export function nextPositiveStation(score: number): NextPositiveStation | null {
       target: 200,
       remaining: 200 - score,
       description: "200+ – درع الطالب المثالي",
+      recovery: false,
+    };
+  }
+  if (score >= 100) {
+    return {
+      key: "leader",
+      label: "قائد",
+      target: 150,
+      remaining: 150 - score,
+      description: "150 – لوحة الشرف تعلق في مدخل السكن",
+      recovery: false,
     };
   }
   return {
-    key: "leader",
-    label: "قائد",
-    target: 150,
-    remaining: 150 - score,
-    description: "150 – لوحة الشرف تعلق في مدخل السكن",
+    key: "beginner",
+    label: "مبتدئ",
+    target: 100,
+    remaining: 100 - score,
+    description: "100 — العودة إلى نقطة التوازن",
+    recovery: true,
   };
 }
