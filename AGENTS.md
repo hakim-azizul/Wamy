@@ -208,6 +208,12 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - Removed: `utils/password.js` (obsolete scrypt hash), `utils/token.js` (obsolete HMAC issuer).
 
 ### Client (wamy-client)
+- **Global views:** `src/app/loading.tsx` — centered RTL loading screen with an animated,
+  staggered-draw `W` mark (`Componenets/(root)/shared/WMark.tsx`) in the cream/forest palette;
+  `src/app/not-found.tsx` — warm hostel-themed RTL 404 card with `404` indicator and Home /
+  Dashboard / Sign-in links. `src/app/globals.css` holds `wam-draw`/`wam-float`/`wam-breathe`
+  keyframes with a `prefers-reduced-motion: reduce` fallback. These are global app files and do not
+  alter `(root)` or `(dashboard)` layouts.
 - `src/lib/auth.ts` — Better Auth Mongo adapter + **`jwt()` plugin** exposing `/api/auth/token`
   and `/api/auth/jwks`; sets `baseURL`, `trustedOrigins`, JWT `issuer`/`audience`=baseURL,
   `expirationTime: "1h"`.

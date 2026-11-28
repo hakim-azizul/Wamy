@@ -61,3 +61,41 @@
 .nav-link-underline.active::after {
   transform: scaleX(1);
 }
+
+/* Animated W mark (loading view) — subtle draw + float, theme-safe. */
+@keyframes wam-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes wam-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes wam-breathe {
+  0%, 100% { opacity: 0.75; }
+  50% { opacity: 1; }
+}
+
+.wam-stroke {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation:
+    wam-draw 900ms cubic-bezier(0.4, 0, 0.2, 1) forwards,
+    wam-breathe 2.4s ease-in-out 900ms infinite;
+}
+
+.wam-mark {
+  animation: wam-float 3s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wam-stroke,
+  .wam-mark {
+    animation: none !important;
+  }
+  .wam-stroke {
+    stroke-dashoffset: 0;
+  }
+}
