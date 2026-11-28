@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Home, LayoutDashboard } from "lucide-react";
-import WMark from "@/Componenets/(root)/shared/WMark";
+import WMark from "@/Componenets/shared/WMark";
 
 export default function NotFound() {
   return (

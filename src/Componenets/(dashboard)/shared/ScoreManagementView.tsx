@@ -9,6 +9,7 @@ import {
   type StudentDetailsBundleResponse,
   type UsersResponse,
 } from "@/lib/api/api-client";
+import WamyLoader from "@/Componenets/shared/WamyLoader";
 import {
   STATUS_BADGE_CLASSES,
   STATUS_LABELS,
@@ -143,7 +144,7 @@ export default function ScoreManagementView() {
         </div>
 
         {loading ? (
-          <p className="py-8 text-center text-sm text-[#657F71]">جارٍ تحميل الطلاب...</p>
+          <WamyLoader label="جاري تحميل الطلاب..." variant="compact" />
         ) : sorted.length === 0 ? (
           <p className="py-8 text-center text-sm text-[#657F71]">لا يوجد طلاب بعد.</p>
         ) : (

@@ -8,6 +8,7 @@ import {
   apiFetch,
   type StudentDetailsBundleResponse,
 } from "@/lib/api/api-client";
+import WamyLoader from "@/Componenets/shared/WamyLoader";
 import { ROLE_BADGE_CLASSES, ROLE_LABELS } from "@/lib/labels";
 import { useDashboardUser } from "./DashboardShell";
 import StudentDetailsViewer from "./StudentDetailsViewer";
@@ -124,7 +125,9 @@ export default function StudentCvPage() {
         </p>
       )}
 
-      {!bundle && !error && <p className="text-sm text-[#657F71]">جارٍ تحميل الملف...</p>}
+      {!bundle && !error && (
+        <WamyLoader label="جاري تحميل الملف..." variant="compact" />
+      )}
 
       {bundle && tab === "details" && <StudentDetailsViewer bundle={bundle} />}
 

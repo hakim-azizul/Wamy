@@ -3,12 +3,11 @@
 import React, { useState } from "react";
 import { Link } from "@heroui/react";
 import Image from "next/image";
-import { useAuthStatus } from "@/lib/useAuthStatus";
+import AuthDashboardAction from "./AuthDashboardAction";
 
 export default function AppNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeLink, setActiveLink] = useState("#about");
-  const { isAuthenticated } = useAuthStatus();
 
   const navItems = [
     { label: "من نحن", href: "#about" },
@@ -99,30 +98,9 @@ export default function AppNavbar() {
           })}
         </ul>
 
-        {/* বাম পাশের অংশ: Outlined মেম্বার লগইন বাটন */}
-        <div>
-          <Link
-            href={isAuthenticated ? "/dashboard" : "/signin"}
-            className="group border border-[#1E4831]/40 bg-[#F9F5EC]/70 px-5 py-2.5 text-sm font-semibold text-[#1E4831] rounded-full flex flex-row items-center gap-2 transition-all duration-300 hover:border-[#1E4831] hover:bg-[#1E4831] hover:text-[#F9F5EC] active:bg-[#132F20]"
-          >
-            <span>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.8}
-                stroke="currentColor"
-                className="h-4 w-4 text-[#1E4831] transition-colors duration-300 group-hover:text-[#F9F5EC]"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
-                />
-              </svg>
-            </span>
-            {isAuthenticated ? "لوحة التحكم" : "دخول الأعضاء"}
-          </Link>
+        {/* Desktop auth / dashboard action (hidden on small screens — shown in the menu). */}
+        <div className="hidden md:block">
+          <AuthDashboardAction variant="pill" />
         </div>
       </nav>
 
@@ -149,6 +127,12 @@ export default function AppNavbar() {
                 </li>
               );
             })}
+            <li>
+              <AuthDashboardAction
+                variant="menu"
+                onNavigate={() => setIsMenuOpen(false)}
+              />
+            </li>
           </ul>
         </div>
       )}

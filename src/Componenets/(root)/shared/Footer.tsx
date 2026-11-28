@@ -4,10 +4,9 @@ import React from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { MapPin, Mail, Phone, ShieldCheck, ArrowUpLeft } from "lucide-react";
-import { useAuthStatus } from "@/lib/useAuthStatus";
+import AuthDashboardAction from "./AuthDashboardAction";
 
 export default function Footer() {
-  const { isAuthenticated } = useAuthStatus();
   const quickLinks = [
     { label: "من نحن", href: "#about" },
     { label: "حياة الطالب", href: "#student-life" },
@@ -118,12 +117,7 @@ export default function Footer() {
 
             {/* একক অ্যাকসেন্ট CTA বাটন */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
-              <Link
-                href={isAuthenticated ? "/dashboard" : "/signin"}
-                className="inline-flex items-center justify-center rounded-xl bg-[#DE2F2C] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#BD221F] active:bg-[#931815]"
-              >
-                {isAuthenticated ? "لوحة التحكم" : "دخول الأعضاء"}
-              </Link>
+              <AuthDashboardAction variant="cta" />
 
               <button
                 type="button"

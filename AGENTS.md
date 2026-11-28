@@ -208,12 +208,18 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - Removed: `utils/password.js` (obsolete scrypt hash), `utils/token.js` (obsolete HMAC issuer).
 
 ### Client (wamy-client)
-- **Global views:** `src/app/loading.tsx` — centered RTL loading screen with an animated,
-  staggered-draw `W` mark (`Componenets/(root)/shared/WMark.tsx`) in the cream/forest palette;
-  `src/app/not-found.tsx` — warm hostel-themed RTL 404 card with `404` indicator and Home /
-  Dashboard / Sign-in links. `src/app/globals.css` holds `wam-draw`/`wam-float`/`wam-breathe`
-  keyframes with a `prefers-reduced-motion: reduce` fallback. These are global app files and do not
-  alter `(root)` or `(dashboard)` layouts.
+- **Global views:** `src/app/loading.tsx` now renders the shared branded loader; `not-found.tsx` is
+  the warm hostel-themed RTL 404 card with `404` indicator and Home / Dashboard / Sign-in links.
+  `src/app/globals.css` holds `wam-draw`/`wam-float`/`wam-breathe` keyframes with a
+  `prefers-reduced-motion: reduce` fallback. These are global app files and do not alter
+  `(root)` or `(dashboard)` layouts.
+- **Shared branded loader:** `src/Componenets/shared/WamyLoader.tsx` (with `WMark.tsx` colocated)
+  provides `fullscreen` and `compact` variants (animated W mark + RTL label + pulsing dots). It is
+  used by `app/loading.tsx`, the dashboard auth-verification guard (`DashboardShell` — replaced the
+  bare `جارٍ التحقق من الجلسة...` text), and all other local loading states: `ProfileForm`,
+  `StudentCvPage`, `ScoreManagementView`, `StudentPointsDetailView`, and the `<Suspense>` fallbacks
+  of the profile / users / scores pages. Auth/redirect/JWKS logic is unchanged — the loader only
+  replaces the plain-text UI while verification resolves. Button busy labels are unchanged.
 - `src/lib/auth.ts` — Better Auth Mongo adapter + **`jwt()` plugin** exposing `/api/auth/token`
   and `/api/auth/jwks`; sets `baseURL`, `trustedOrigins`, JWT `issuer`/`audience`=baseURL,
   `expirationTime: "1h"`.
@@ -313,8 +319,13 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `student/StudentOverview.tsx` — score card links to `/dashboard/student/scores`.
 - `shared/DashboardShell.tsx` — role guard updated to permit `/dashboard/students/...` for manager
   and supervisor only.
-- `(root)/shared/Navbar.tsx` + `Footer.tsx` — when authenticated the "دخول الأعضاء" CTA becomes
-  a "لوحة التحكم" button linking to `/dashboard`; logged-out state unchanged.
+- **Conditional auth action:** `(root)/shared/AuthDashboardAction.tsx` — **created**: encapsulates
+  `useAuthStatus()` and renders "دخول الأعضاء" → `/signin` when logged out, "لوحة التحكم" →
+  `/dashboard` when logged in. Variants: `pill` (desktop navbar, hidden below `md`), `menu`
+  (inside the small-screen nav menu list, closes the menu on navigation), `cta` (footer).
+- `(root)/shared/Navbar.tsx` — desktop pill and mobile-menu item both use `AuthDashboardAction`;
+  no duplicated conditional auth logic or standalone small-screen CTA. `Footer.tsx` uses the
+  `cta` variant. RTL styling and routes unchanged.
 - `src/app/(dashboard)/dashboard/student/profile/page.tsx` — wraps `ProfileForm` in `Suspense`
   (required for `useSearchParams()`).
 - Dashboard routes/views otherwise unchanged.

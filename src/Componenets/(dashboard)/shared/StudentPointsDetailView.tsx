@@ -16,6 +16,7 @@ import {
   STATUS_LABELS,
 } from "@/lib/labels";
 import type { IUser } from "@/lib/types/users";
+import WamyLoader from "@/Componenets/shared/WamyLoader";
 import { useDashboardUser } from "./DashboardShell";
 import { FormMessage } from "./FormFields";
 import ScoreEvaluationModal from "./ScoreEvaluationModal";
@@ -86,7 +87,7 @@ export default function StudentPointsDetailView() {
   const canEvaluate = actor?.role === "manager" || actor?.role === "supervisor";
 
   if (loading) {
-    return <p className="text-sm text-[#657F71]">جارٍ تحميل بيانات النقاط...</p>;
+    return <WamyLoader label="جاري تحميل بيانات النقاط..." variant="compact" />;
   }
 
   return (

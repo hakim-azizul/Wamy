@@ -12,6 +12,7 @@ import {
   type SectionMeta,
 } from "@/lib/studentDetailsMeta";
 import type { StudentProfileSectionKey } from "@/lib/types/studentDetails";
+import WamyLoader from "@/Componenets/shared/WamyLoader";
 import { FormMessage, MetaField, ReadOnlyField } from "../shared/FormFields";
 
 type FormValues = Record<string, string>;
@@ -182,7 +183,7 @@ export default function ProfileForm() {
   }
 
   if (loading) {
-    return <p className="text-sm text-[#657F71]">جارٍ تحميل بياناتك...</p>;
+    return <WamyLoader label="جاري تحميل بياناتك..." variant="compact" />;
   }
 
   return (

@@ -18,6 +18,7 @@ import {
   getToken,
   type UserResponse,
 } from "@/lib/api/api-client";
+import WamyLoader from "@/Componenets/shared/WamyLoader";
 import { ROLE_BADGE_CLASSES, ROLE_LABELS } from "@/lib/labels";
 import type { IUser } from "@/lib/types/users";
 import DashboardSidebar from "./DashboardSidebar";
@@ -108,11 +109,7 @@ export default function DashboardShell({ children }: { children: ReactNode }) {
   }
 
   if (loading) {
-    return (
-      <div dir="rtl" className="flex min-h-screen items-center justify-center bg-[#EBE2CA] text-[#1E4831]">
-        جارٍ التحقق من الجلسة...
-      </div>
-    );
+    return <WamyLoader label="جاري التحقق من الجلسة..." />;
   }
 
   if (error || !user) {
