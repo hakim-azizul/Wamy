@@ -9,9 +9,11 @@ import {
 import type { IUser } from "@/lib/types/users";
 import { useDashboardUser } from "../shared/DashboardShell";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal";
+import ConfirmPromoteModal from "../shared/ConfirmPromoteModal";
 import { FormMessage } from "../shared/FormFields";
 import UsersTable from "../shared/UsersTable";
 import { useUserDeletion } from "../shared/useUserDeletion";
+import { useUserPromotion } from "../shared/useUserPromotion";
 
 const ROLE_OPTIONS = [
   { value: "all", label: "كل الأدوار" },
@@ -58,6 +60,11 @@ export default function UsersView() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const promotion = useUserPromotion((user) => {
+    setSuccess(`تمت ترقية "${user.name}" إلى مدير بنجاح.`);
+    void load();
+  });
 
   function changeRole(next: RoleFilter) {
     const params = new URLSearchParams(searchParams.toString());
@@ -108,6 +115,7 @@ export default function UsersView() {
           showCreatedBy
           actorRole={actor?.role}
           onRequestDelete={deletion.open}
+          onRequestPromote={promotion.open}
         />
       </section>
 
@@ -117,6 +125,14 @@ export default function UsersView() {
         error={deletion.error}
         onCancel={deletion.cancel}
         onConfirm={() => void deletion.confirm()}
+      />
+
+      <ConfirmPromoteModal
+        user={promotion.target}
+        busy={promotion.busy}
+        error={promotion.error}
+        onCancel={promotion.cancel}
+        onConfirm={() => void promotion.confirm()}
       />
     </div>
   );

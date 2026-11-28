@@ -160,7 +160,7 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   `ensureIndexes()` (student detail `userId` indexes only), `closeMongoDB()`.
 - `services/users.js` — reads `user`/`account`; `findCredentialByUserId()`; `createUser()` calls
   Better Auth sign-up then patches app fields; attaches `score`/`roomNumber`/`flatNumber` ONLY for
-  students; `listUsers()`, `updateStudentScore()`; **`deleteUserCascade()`** removes `user` +
+  students; `listUsers()`, `updateStudentScore()`, `promoteSupervisorToManager()`; **`deleteUserCascade()`** removes `user` +
   `account` + `session` + (for students) all 5 detail collections by `userId`.
 - `routes/auth.js` — `GET /me` only; `POST /login` returns 410 (tokens come from Better Auth).
 - `middleware.js` — `verifyUser` **awaits `verifyToken()`**, attaches `req.claims`/`req.userId`/
@@ -179,8 +179,9 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 - `services/users.js` — cascade deletion now also removes the student's score transactions.
 - `routes/users.js` — `GET /` supports `?role=` filtering within the caller's scope;
   `POST /students` validates required `roomNumber`/`flatNumber`;
-  `PATCH /:id/score` rejects non-student targets with 400; **`DELETE /:id`** enforces the deletion
-  RBAC (self-delete 403, student actor 403, missing 404, disallowed role 403) then cascades.
+  `PATCH /:id/score` rejects non-student targets with 400; **`PATCH /:id/promote`** is manager-only
+  (`verifyUser` + `isManager`), rejects self-promotion (403), missing users (404) and non-supervisor
+  targets (400), then updates `role` to `manager`; **`DELETE /:id`** enforces deletion RBAC and cascades.
 - `routes/studentDetails.js` — adds **`PATCH /:userId/details`** (`verifyUser` +
   `isManagerOrSupervisor`, 404 missing student, returns updated bundle + section).
 - `services/studentDetails.js` — bundle includes canonical `user` fields; adds
@@ -249,6 +250,12 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
   button click — only after Confirm.
 - `shared/useUserDeletion.ts` — **created**: shared modal state + confirmed `DELETE` call + error
   feedback + removal callback.
+- **Supervisor → Manager promotion (UI):** `lib/api-client.ts` helper `promoteUserToManager(id)`
+  (`PATCH /api/users/:id/promote`); `shared/ConfirmPromoteModal.tsx` (RTL confirmation with user
+  name/email/current role, busy + error states); `shared/useUserPromotion.ts` shared flow. Actions
+  appear only for `manager` actors on `supervisor` rows in `manager/UsersView.tsx` (via
+  `UsersTable` `onRequestPromote`) and `manager/SupervisorsView.tsx`. On success the list is
+  refetched so the promoted user immediately shows the `مدير` badge, with Arabic success feedback.
 - `src/lib/labels.ts`, `src/lib/format.ts`.
 - `src/lib/dashboardNav.ts` — single source of truth for the role -> route map (icons from
   `lucide-react`), including the five student detail sections as query-param deep links.
@@ -352,6 +359,7 @@ with that `userId`. Client delete buttons call this endpoint ONLY after an RTL c
 | POST | `/api/users/students` | supervisor | native sign-up + student-only patch (`score`, `roomNumber`, `flatNumber`, createdBy) |
 | GET | `/api/users` | auth | manager → all, supervisor → students, student → self |
 | PATCH | `/api/users/:id/score` | manager | edit student top-level `score`; 400 for non-student targets |
+| PATCH | `/api/users/:id/promote` | **manager only** | promote a `supervisor` to `manager`; 403 for non-managers/self, 404 missing, 400 wrong role; returns safe user |
 | DELETE | `/api/users/:id` | manager / supervisor (RBAC matrix) | cascading delete: user + account + session + student details |
 | GET | `/api/student-details/me` | student | own 5-section bundle + completionSummary + read-only `user` fields |
 | GET | `/api/student-details/:userId` | manager/supervisor (student: self only) | any student's bundle + read-only `user` fields |

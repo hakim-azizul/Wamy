@@ -1,6 +1,6 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
+import { ArrowUpCircle, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/format";
 import { canDeleteUser } from "@/lib/deletePermissions";
 import {
@@ -16,13 +16,16 @@ export default function UsersTable({
   showCreatedBy = false,
   actorRole,
   onRequestDelete,
+  onRequestPromote,
 }: {
   users: IUser[];
   showCreatedBy?: boolean;
   actorRole?: IUser["role"];
   onRequestDelete?: (user: IUser) => void;
+  onRequestPromote?: (user: IUser) => void;
 }) {
   const showDelete = Boolean(actorRole && onRequestDelete);
+  const showPromote = Boolean(actorRole === "manager" && onRequestPromote);
   const columnCount = 6 + (showCreatedBy ? 1 : 0) + (showDelete ? 1 : 0);
 
   return (
@@ -69,18 +72,31 @@ export default function UsersTable({
                 <td className="px-4 py-3 text-[#657F71]">{formatDate(user.createdAt)}</td>
                 {showDelete && (
                   <td className="px-4 py-3">
-                    {canDeleteUser(actorRole, user) ? (
-                      <button
-                        type="button"
-                        onClick={() => onRequestDelete?.(user)}
-                        title="حذف الحساب"
-                        className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-2 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    ) : (
-                      <span className="text-[#657F71]">—</span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {showPromote && user.role === "supervisor" && (
+                        <button
+                          type="button"
+                          onClick={() => onRequestPromote?.(user)}
+                          title="ترقية إلى مدير"
+                          aria-label={`ترقية ${user.name} إلى مدير`}
+                          className="cursor-pointer rounded-lg border border-[#1E4831]/25 bg-[#DCE6E0] p-2 text-[#1E4831] transition-colors hover:bg-[#1E4831] hover:text-white"
+                        >
+                          <ArrowUpCircle className="h-4 w-4" />
+                        </button>
+                      )}
+                      {canDeleteUser(actorRole, user) ? (
+                        <button
+                          type="button"
+                          onClick={() => onRequestDelete?.(user)}
+                          title="حذف الحساب"
+                          className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-2 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <span className="text-[#657F71]">—</span>
+                      )}
+                    </div>
                   </td>
                 )}
               </tr>

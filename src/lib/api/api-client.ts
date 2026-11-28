@@ -91,6 +91,11 @@ export function clearToken(): void {
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
+/** Manager-only: promote an existing supervisor to manager. */
+export function promoteUserToManager(userId: string): Promise<UserResponse> {
+  return apiFetch<UserResponse>(`/api/users/${userId}/promote`, { method: "PATCH" });
+}
+
 /**
  * Return a valid Better Auth JWT for wamy-server, refreshing from
  * GET /api/auth/token when the cached token is missing or near expiry.

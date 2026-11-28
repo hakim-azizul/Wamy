@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { Trash2 } from "lucide-react";
+import { ArrowUpCircle, Trash2 } from "lucide-react";
 import {
   apiFetch,
   type UserResponse,
@@ -11,9 +11,11 @@ import { STATUS_BADGE_CLASSES, STATUS_LABELS } from "@/lib/labels";
 import type { IUser } from "@/lib/types/users";
 import { FormMessage, TextField } from "../shared/FormFields";
 import ConfirmDeleteModal from "../shared/ConfirmDeleteModal";
+import ConfirmPromoteModal from "../shared/ConfirmPromoteModal";
 import { useDashboardUser } from "../shared/DashboardShell";
 import { canDeleteUser } from "@/lib/deletePermissions";
 import { useUserDeletion } from "../shared/useUserDeletion";
+import { useUserPromotion } from "../shared/useUserPromotion";
 
 const EMPTY_FORM = { name: "", email: "", password: "", phone: "" };
 
@@ -43,6 +45,11 @@ export default function SupervisorsView() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const promotion = useUserPromotion((user) => {
+    setSuccess(`تمت ترقية "${user.name}" إلى مدير بنجاح.`);
+    void load();
+  });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -163,19 +170,32 @@ export default function SupervisorsView() {
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      {canDeleteUser(actor?.role, supervisor) ? (
-                        <button
-                          type="button"
-                          onClick={() => deletion.open(supervisor)}
-                          title="حذف المشرف"
-                          aria-label={`حذف ${supervisor.name}`}
-                          className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-2 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      ) : (
-                        <span className="text-[#657F71]">—</span>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {actor?.role === "manager" && (
+                          <button
+                            type="button"
+                            onClick={() => promotion.open(supervisor)}
+                            title="ترقية إلى مدير"
+                            aria-label={`ترقية ${supervisor.name} إلى مدير`}
+                            className="cursor-pointer rounded-lg border border-[#1E4831]/25 bg-[#DCE6E0] p-2 text-[#1E4831] transition-colors hover:bg-[#1E4831] hover:text-white"
+                          >
+                            <ArrowUpCircle className="h-4 w-4" />
+                          </button>
+                        )}
+                        {canDeleteUser(actor?.role, supervisor) ? (
+                          <button
+                            type="button"
+                            onClick={() => deletion.open(supervisor)}
+                            title="حذف المشرف"
+                            aria-label={`حذف ${supervisor.name}`}
+                            className="cursor-pointer rounded-lg border border-[#DE2F2C]/25 bg-[#FDE8E7] p-2 text-[#DE2F2C] transition-colors hover:bg-[#DE2F2C] hover:text-white"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        ) : (
+                          <span className="text-[#657F71]">—</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -191,6 +211,14 @@ export default function SupervisorsView() {
         error={deletion.error}
         onCancel={deletion.cancel}
         onConfirm={() => void deletion.confirm()}
+      />
+
+      <ConfirmPromoteModal
+        user={promotion.target}
+        busy={promotion.busy}
+        error={promotion.error}
+        onCancel={promotion.cancel}
+        onConfirm={() => void promotion.confirm()}
       />
     </div>
   );
